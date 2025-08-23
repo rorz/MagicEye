@@ -1,0 +1,51 @@
+# Dependencies
+node_modules/
+pnpm-lock.yaml
+
+# Build outputs
+dist/
+
+# TypeScript build artifacts
+*.tsbuildinfo
+*.d.ts
+*.js
+*.js.map
+# Keep the necessary JS files
+!scripts/postinstall.js
+!scripts/dev.sh
+!scripts/generate-icons.sh
+
+# Environment
+.env
+.env.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Chrome Extension packaging
+*.pem
+*.crx
+extension.zip
+web-ext-artifacts/
+
+# Temporary files
+tmp/
+temp/
+.cache/
+
+# Testing
+coverage/
+.nyc_output/

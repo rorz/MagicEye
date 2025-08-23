@@ -1,0 +1,37 @@
+{
+  "name": "claude-code-vision",
+  "version": "0.1.0",
+  "description": "Chrome extension + MCP server for providing visual context to Claude Code",
+  "type": "module",
+  "scripts": {
+    "build": "tsx scripts/build.ts",
+    "build:extension": "tsx scripts/build.ts --target=extension",
+    "build:server": "tsx scripts/build.ts --target=server",
+    "dev": "tsx scripts/build.ts --watch",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist",
+    "generate-icons": "./scripts/generate-icons.sh",
+    "postinstall": "node scripts/postinstall.js",
+    "setup": "node scripts/postinstall.js"
+  },
+  "keywords": [
+    "mcp",
+    "claude",
+    "chrome-extension",
+    "screenshot"
+  ],
+  "author": "Rory",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/chrome": "^0.0.254",
+    "@types/node": "^20.11.0",
+    "esbuild": "^0.19.11",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.3"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^0.6.0",
+    "@types/ws": "^8.18.1",
+    "ws": "^8.18.3"
+  }
+}

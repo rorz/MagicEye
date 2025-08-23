@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body {
+      width: 320px;
+      padding: 16px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    .container {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+    }
+    h1 {
+      font-size: 20px;
+      margin: 0 0 16px 0;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      font-weight: 700;
+    }
+    .status {
+      padding: 8px 12px;
+      border-radius: 6px;
+      margin-bottom: 16px;
+      font-size: 14px;
+      font-weight: 500;
+    }
+    .status.connected {
+      background: #d4edda;
+      color: #155724;
+    }
+    .status.disconnected {
+      background: #f8d7da;
+      color: #721c24;
+    }
+    
+    /* Auto Mode Toggle */
+    .auto-mode {
+      background: #f8f9fa;
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 16px;
+    }
+    .toggle {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+    }
+    .toggle input {
+      display: none;
+    }
+    .slider {
+      width: 48px;
+      height: 24px;
+      background: #ccc;
+      border-radius: 24px;
+      position: relative;
+      transition: 0.3s;
+    }
+    .slider:before {
+      content: '';
+      position: absolute;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: white;
+      top: 3px;
+      left: 3px;
+      transition: 0.3s;
+    }
+    input:checked + .slider {
+      background: #00ff00;
+      box-shadow: 0 0 10px #00ff00;
+    }
+    input:checked + .slider:before {
+      transform: translateX(24px);
+    }
+    .label {
+      font-weight: 600;
+      font-size: 14px;
+    }
+    .auto-status {
+      margin-top: 8px;
+      font-size: 12px;
+      color: #666;
+      font-style: italic;
+    }
+    .auto-status.active {
+      color: #00aa00;
+      font-weight: 600;
+    }
+    
+    .button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 8px;
+      border: none;
+      border-radius: 6px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      transition: transform 0.2s;
+    }
+    .button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+    .button:disabled {
+      background: #6c757d;
+      cursor: not-allowed;
+      transform: none;
+    }
+    .button.secondary {
+      background: #6c757d;
+    }
+    .button.secondary:hover {
+      background: #5a6268;
+    }
+    .info {
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid #e0e0e0;
+      font-size: 12px;
+      color: #666;
+      text-align: center;
+    }
+    
+    /* Auto capture indicators */
+    @keyframes pulse {
+      0% { opacity: 1; }
+      50% { opacity: 0.5; }
+      100% { opacity: 1; }
+    }
+    .recording {
+      display: none;
+      align-items: center;
+      gap: 8px;
+      margin-top: 8px;
+      padding: 8px;
+      background: #fff3cd;
+      border-radius: 6px;
+      font-size: 12px;
+      color: #856404;
+    }
+    .recording.active {
+      display: flex;
+    }
+    .recording-dot {
+      width: 8px;
+      height: 8px;
+      background: #ff0000;
+      border-radius: 50%;
+      animation: pulse 1.5s infinite;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Code Vision</h1>
+    
+    <div id="status" class="status disconnected">
+      Checking connection...
+    </div>
+    
+    <div class="auto-mode">
+      <label class="toggle">
+        <span class="label">AUTO MODE 🚀</span>
+        <input type="checkbox" id="auto-capture-toggle">
+        <span class="slider"></span>
+      </label>
+      <div id="auto-status" class="auto-status">Off - Manual capture only</div>
+      <div id="recording" class="recording">
+        <div class="recording-dot"></div>
+        <span>Monitoring page activity...</span>
+      </div>
+    </div>
+    
+    <button id="test-capture" class="button">Test Screenshot Capture</button>
+    <button id="view-history" class="button secondary">View Capture History</button>
+    <button id="reconnect" class="button secondary">Reconnect to MCP Server</button>
+    
+    <div class="info">
+      <p>Visual context for AI development</p>
+      <p id="version"></p>
+    </div>
+  </div>
+  
+  <script src="popup.js"></script>
+</body>
+</html>
