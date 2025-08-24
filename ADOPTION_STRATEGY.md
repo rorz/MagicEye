@@ -1,8 +1,8 @@
-# 🚀 Adoption Strategy for MagicEye
+# 🚀 Adoption Strategy for MagicEyes
 
 ## The Goal: One Command to Rule Them All
 ```bash
-npx magiceye
+npx magiceyes
 ```
 
 ## The Reality Check
@@ -11,7 +11,7 @@ After thinking deeply about this, here's the most painless adoption path that ba
 ### Option 1: NPM Global Package (Recommended)
 **Setup Command:**
 ```bash
-npm install -g magiceye && magiceye setup
+npm install -g magiceyes && magiceyes setup
 ```
 
 **What it does:**
@@ -33,7 +33,7 @@ npm install -g magiceye && magiceye setup
 ### Option 2: NPX One-Liner (Even Better)
 **Setup Command:**
 ```bash
-npx magiceye@latest
+npx magiceyes@latest
 ```
 
 **What it does:**
@@ -77,9 +77,9 @@ npx magiceye@latest
 ```javascript
 // package.json
 {
-  "name": "magiceye",
+  "name": "magiceyes",
   "bin": {
-    "magiceye": "./cli.js"
+    "magiceyes": "./cli.js"
   },
   "scripts": {
     "postinstall": "node ./setup.js"
@@ -102,8 +102,8 @@ The setup flow:
 ### Phase 3: The Magic Link
 Create a landing page that:
 1. Detects OS/browser
-2. Shows ONE button: "Install MagicEye"
-3. Button runs: `npx magiceye` via copy-to-clipboard
+2. Shows ONE button: "Install MagicEyes"
+3. Button runs: `npx magiceyes` via copy-to-clipboard
 4. OR deeplinks to Chrome Web Store
 
 ## 📊 Success Metrics for Painless Adoption

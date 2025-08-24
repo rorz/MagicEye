@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# Development helper for MagicEye
-echo "🔄 Starting MagicEye development mode..."
+# Development helper for MagicEyes
+echo "🔄 Starting MagicEyes development mode..."
 echo ""
 echo "This will:"
 echo "• Watch and rebuild extension on changes"

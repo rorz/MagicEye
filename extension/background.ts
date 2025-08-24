@@ -120,7 +120,7 @@ function connectToMCPServer() {
 }
 
 chrome.runtime.onInstalled.addListener(() => {
-  console.log('MagicEye extension installed');
+  console.log('MagicEyes extension installed');
   keepServiceWorkerAlive(); // Start keep-alive immediately
   connectToMCPServer();
 });

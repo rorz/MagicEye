@@ -1,4 +1,4 @@
-# MagicEye
+# MagicEyess
 
 **Give your code assistant eyes.**
 
@@ -17,7 +17,7 @@ That's it. The setup wizard will:
 
 ## 🎯 How It Works
 
-1. **Click** the MagicEye icon in Chrome
+1. **Click** the MagicEyes icon in Chrome
 2. **Capture** any webpage or element
 3. **Ask** Claude "What do you see?"
 
@@ -51,7 +51,7 @@ Claude now has eyes. No file management. No manual configuration. It just works.
 
 ```bash
 # Clone the repo
-git clone https://github.com/rorz/MagicEye.git
+git clone https://github.com/rorz/MagicEyes.git
 cd magiceye
 
 # Install dependencies
@@ -119,7 +119,7 @@ pnpm run package:extension
 
 ## 🤝 Contributing
 
-Contributions welcome! Please check out the [issues](https://github.com/rorz/MagicEye/issues) page.
+Contributions welcome! Please check out the [issues](https://github.com/rorz/MagicEyes/issues) page.
 
 ## 🔧 Troubleshooting
 

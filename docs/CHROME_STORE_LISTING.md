@@ -2,13 +2,13 @@
 
 ## Store Details
 
-**Name:** MagicEye
+**Name:** MagicEyes
 
 **Short Description (132 chars max):**
 Give your code assistant eyes. Capture screenshots and provide visual context for AI coding assistants like Claude Code.
 
 **Detailed Description:**
-MagicEye bridges the visual gap between your browser and AI coding assistants. Stop describing UI issues - show them directly.
+MagicEyes bridges the visual gap between your browser and AI coding assistants. Stop describing UI issues - show them directly.
 
 With a single click, capture any part of any webpage and instantly share it with your AI assistant. Works seamlessly with Claude Code today, with more assistants coming soon.
 
@@ -32,7 +32,7 @@ Features:
 • Lightweight and fast
 
 How it works:
-1. Install MagicEye from Chrome Web Store
+1. Install MagicEyes from Chrome Web Store
 2. Run `npx magiceyes` in your terminal (30-second setup)
 3. Click the extension icon to capture
 4. Your AI assistant can now see what you see
@@ -59,7 +59,7 @@ After installing:
 
 2. Restart Claude Code
 
-3. Click the MagicEye icon and start capturing!
+3. Click the MagicEyes icon and start capturing!
 
 The setup takes 30 seconds and works across all your projects.
 
@@ -67,11 +67,11 @@ The setup takes 30 seconds and works across all your projects.
 - Developer Tools
 - Productivity
 
-## Why MagicEye?
+## Why MagicEyes?
 
 Stop wasting time describing what's wrong with your UI. Stop taking screenshots, saving them, uploading them. Stop the friction.
 
-MagicEye creates a direct visual bridge between your browser and your AI assistant. One click, instant context, problem solved.
+MagicEyes creates a direct visual bridge between your browser and your AI assistant. One click, instant context, problem solved.
 
 Built for developers who value their time.
 
@@ -83,8 +83,8 @@ Built for developers who value their time.
 - Screenshots never leave your machine
 
 ## Support
-- GitHub: https://github.com/rorz/MagicEye
-- Issues: https://github.com/rorz/MagicEye/issues
+- GitHub: https://github.com/rorz/MagicEyes
+- Issues: https://github.com/rorz/MagicEyes/issues
 
 ## Publishing Checklist
 

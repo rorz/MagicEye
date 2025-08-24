@@ -450,7 +450,7 @@ async function main() {
   await server.connect(transport);
   
   // Simple startup message to stderr (shows in Claude)
-  console.error('👁️ MagicEye ready');
+  console.error('👁️ MagicEyes ready');
 }
 
 main().catch((error) => {

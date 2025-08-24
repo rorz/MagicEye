@@ -1,4 +1,4 @@
-// Content script for MagicEye
+// Content script for MagicEyes
 // Handles in-page operations that require DOM access
 
 export async function captureFullPageScreenshot(): Promise<string | null> {

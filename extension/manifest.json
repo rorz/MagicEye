@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "MagicEye",
+  "name": "MagicEyes",
   "version": "0.1.0",
   "description": "Give your code assistant eyes - visual context for AI coding assistants",
   "permissions": [
