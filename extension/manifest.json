@@ -20,8 +20,13 @@
   },
   "content_scripts": [
     {
-      "matches": ["<all_urls>"],
-      "js": ["content.js", "monitor.js"],
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "content.js",
+        "monitor.js"
+      ],
       "run_at": "document_start"
     }
   ],

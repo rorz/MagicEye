@@ -3,193 +3,288 @@
 <head>
   <meta charset="UTF-8">
   <style>
-    body {
-      width: 320px;
-      padding: 16px;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    }
-    .container {
-      background: white;
-      border-radius: 12px;
-      padding: 20px;
-      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-    }
-    h1 {
-      font-size: 20px;
-      margin: 0 0 16px 0;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      font-weight: 700;
-    }
-    .status {
-      padding: 8px 12px;
-      border-radius: 6px;
-      margin-bottom: 16px;
-      font-size: 14px;
-      font-weight: 500;
-    }
-    .status.connected {
-      background: #d4edda;
-      color: #155724;
-    }
-    .status.disconnected {
-      background: #f8d7da;
-      color: #721c24;
+    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
     }
     
-    /* Auto Mode Toggle */
-    .auto-mode {
-      background: #f8f9fa;
-      border-radius: 8px;
-      padding: 12px;
-      margin-bottom: 16px;
+    body {
+      width: 320px;
+      height: 180px;
+      font-family: 'JetBrains Mono', monospace;
+      background: #FFFFFF;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      user-select: none;
+      position: relative;
     }
-    .toggle {
+    
+    body::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: repeating-linear-gradient(
+        90deg,
+        #000 0,
+        #000 2px,
+        transparent 2px,
+        transparent 4px
+      );
+    }
+    
+    .container {
+      width: 100%;
+      padding: 28px 32px 24px;
+    }
+    
+    .header {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      cursor: pointer;
+      margin-bottom: 24px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid #000;
     }
-    .toggle input {
-      display: none;
+    
+    .logo-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
     }
-    .slider {
-      width: 48px;
+    
+    .logo-mark {
+      width: 24px;
       height: 24px;
-      background: #ccc;
-      border-radius: 24px;
+      background: #000;
       position: relative;
-      transition: 0.3s;
-    }
-    .slider:before {
-      content: '';
-      position: absolute;
-      width: 18px;
-      height: 18px;
-      border-radius: 50%;
-      background: white;
-      top: 3px;
-      left: 3px;
-      transition: 0.3s;
-    }
-    input:checked + .slider {
-      background: #00ff00;
-      box-shadow: 0 0 10px #00ff00;
-    }
-    input:checked + .slider:before {
-      transform: translateX(24px);
-    }
-    .label {
-      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #FFF;
+      font-weight: 700;
       font-size: 14px;
     }
-    .auto-status {
-      margin-top: 8px;
-      font-size: 12px;
-      color: #666;
-      font-style: italic;
-    }
-    .auto-status.active {
-      color: #00aa00;
+    
+    .title {
+      font-size: 13px;
       font-weight: 600;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: #000;
     }
     
-    .button {
-      width: 100%;
-      padding: 10px;
-      margin-top: 8px;
-      border: none;
-      border-radius: 6px;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-      cursor: pointer;
-      font-size: 14px;
-      font-weight: 500;
-      transition: transform 0.2s;
-    }
-    .button:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
-    }
-    .button:disabled {
-      background: #6c757d;
-      cursor: not-allowed;
-      transform: none;
-    }
-    .button.secondary {
-      background: #6c757d;
-    }
-    .button.secondary:hover {
-      background: #5a6268;
-    }
-    .info {
-      margin-top: 16px;
-      padding-top: 16px;
-      border-top: 1px solid #e0e0e0;
-      font-size: 12px;
-      color: #666;
-      text-align: center;
-    }
-    
-    /* Auto capture indicators */
-    @keyframes pulse {
-      0% { opacity: 1; }
-      50% { opacity: 0.5; }
-      100% { opacity: 1; }
-    }
-    .recording {
-      display: none;
+    .status-indicator {
+      display: flex;
       align-items: center;
       gap: 8px;
-      margin-top: 8px;
-      padding: 8px;
-      background: #fff3cd;
-      border-radius: 6px;
-      font-size: 12px;
-      color: #856404;
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
     }
-    .recording.active {
+    
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      border: 2px solid #000;
+      background: #E0E0E0;
+      position: relative;
+      flex-shrink: 0;
+    }
+    
+    .status-dot.connected {
+      background: #90EE90;
+      box-shadow: 0 0 0 1px #90EE90;
+      animation: pulse 2s ease-in-out infinite;
+    }
+    
+    .status-dot.disconnected {
+      background: #FFB366;
+      box-shadow: 0 0 0 1px #FFB366;
+    }
+    
+    .connection-text {
+      color: #666;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+    
+    .connection-text.connected {
+      color: #000;
+    }
+    
+    @keyframes pulse {
+      0%, 100% { 
+        opacity: 1;
+        transform: scale(1);
+      }
+      50% { 
+        opacity: 0.8;
+        transform: scale(0.95);
+      }
+    }
+    
+    .control-section {
       display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px;
+      background: #F8F8F8;
+      border: 2px solid #000;
+      margin-bottom: 16px;
+      position: relative;
     }
-    .recording-dot {
-      width: 8px;
-      height: 8px;
-      background: #ff0000;
-      border-radius: 50%;
-      animation: pulse 1.5s infinite;
+    
+    .control-section::after {
+      content: '';
+      position: absolute;
+      bottom: -4px;
+      left: 4px;
+      right: -4px;
+      height: 2px;
+      background: #000;
+    }
+    
+    .control-section::before {
+      content: '';
+      position: absolute;
+      top: 4px;
+      bottom: -4px;
+      right: -4px;
+      width: 2px;
+      background: #000;
+    }
+    
+    .mode-label {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.2em;
+      color: #000;
+    }
+    
+    .switch {
+      position: relative;
+      width: 60px;
+      height: 32px;
+      cursor: pointer;
+    }
+    
+    .switch input {
+      display: none;
+    }
+    
+    .slider {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: #FFFFFF;
+      border: 2px solid #000;
+      transition: background-color 0.3s;
+      overflow: hidden;
+    }
+    
+    .slider::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: repeating-linear-gradient(
+        45deg,
+        transparent,
+        transparent 2px,
+        rgba(0,0,0,0.03) 2px,
+        rgba(0,0,0,0.03) 4px
+      );
+      transition: left 0.3s;
+    }
+    
+    input:checked + .slider::after {
+      left: 0;
+    }
+    
+    .slider-handle {
+      position: absolute;
+      top: 4px;
+      left: 4px;
+      width: 22px;
+      height: 22px;
+      background: #000;
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      z-index: 1;
+    }
+    
+    /* Prevent animation on initial load */
+    .no-transition .slider-handle {
+      transition: none !important;
+    }
+    
+    input:checked + .slider {
+      background: #90EE90;
+    }
+    
+    input:checked + .slider .slider-handle {
+      transform: translateX(28px);
+      background: #000;
+    }
+    
+    .status-text {
+      font-size: 10px;
+      text-align: center;
+      color: #666;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      line-height: 1.4;
+    }
+    
+    .status-text.active {
+      color: #000;
+      font-weight: 600;
+    }
+    
+    .status-text span {
+      display: inline-block;
+      margin: 0 4px;
+      color: #000;
+      font-weight: 600;
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>MagicEyes</h1>
-    
-    <div id="status" class="status disconnected">
-      Checking connection...
-    </div>
-    
-    <div class="auto-mode">
-      <label class="toggle">
-        <span class="label">AUTO MODE 🚀</span>
-        <input type="checkbox" id="auto-capture-toggle">
-        <span class="slider"></span>
-      </label>
-      <div id="auto-status" class="auto-status">Off - Manual capture only</div>
-      <div id="recording" class="recording">
-        <div class="recording-dot"></div>
-        <span>Monitoring page activity...</span>
+    <div class="header">
+      <div class="logo-group">
+        <div class="logo-mark">◉</div>
+        <span class="title">MagicEyes</span>
+      </div>
+      <div class="status-indicator">
+        <div id="status-dot" class="status-dot disconnected"></div>
+        <span id="connection-text" class="connection-text">Not Connected</span>
       </div>
     </div>
     
-    <button id="test-capture" class="button">Test Screenshot Capture</button>
-    <button id="view-history" class="button secondary">View Capture History</button>
-    <button id="reconnect" class="button secondary">Reconnect to MCP Server</button>
+    <div class="control-section">
+      <span class="mode-label" id="mode-label">OFF</span>
+      <label class="switch">
+        <input type="checkbox" id="power-toggle">
+        <span class="slider">
+          <span class="slider-handle"></span>
+        </span>
+      </label>
+    </div>
     
-    <div class="info">
-      <p>Visual context for AI development</p>
-      <p id="version"></p>
+    <div id="status-text" class="status-text">
+      Disconnected
     </div>
   </div>
   

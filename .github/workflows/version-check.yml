@@ -1,0 +1,28 @@
+name: Version Check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  verify-versions:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Check version alignment
+        run: |
+          PKG_VERSION=$(node -p "require('./package.json').version")
+          MANIFEST_VERSION=$(node -p "require('./extension/manifest.json').version")
+          
+          echo "package.json (source): $PKG_VERSION"
+          echo "manifest.json: $MANIFEST_VERSION"
+          
+          if [ "$PKG_VERSION" != "$MANIFEST_VERSION" ]; then
+            echo "❌ Version mismatch detected!"
+            echo "Run: pnpm sync:version"
+            exit 1
+          fi
+          
+          echo "✅ All versions aligned!"

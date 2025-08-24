@@ -11,7 +11,7 @@ interface MonitorConfig {
 
 class VisionMonitor {
   private config: MonitorConfig = {
-    enabled: false,
+    enabled: true,  // Default to enabled
     captureOnError: true,
     captureOnNavigation: true,
     captureOnMutation: true,
@@ -42,10 +42,12 @@ class VisionMonitor {
       }
     });
 
-    // Auto-start if enabled
-    chrome.storage.local.get('visionMonitorEnabled', (result) => {
-      if (result.visionMonitorEnabled) {
-        this.config.enabled = true;
+    // Auto-start based on autoCaptureEnabled setting (default to true)
+    chrome.storage.local.get('autoCaptureEnabled', (result) => {
+      // Default to true if not explicitly set to false
+      const enabled = result.autoCaptureEnabled !== false;
+      this.config.enabled = enabled;
+      if (enabled) {
         this.start();
       }
     });

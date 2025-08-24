@@ -1,96 +1,116 @@
 document.addEventListener('DOMContentLoaded', () => {
-  const statusEl = document.getElementById('status')!;
-  const testButton = document.getElementById('test-capture') as HTMLButtonElement;
-  const reconnectButton = document.getElementById('reconnect') as HTMLButtonElement;
-  const viewHistoryButton = document.getElementById('view-history') as HTMLButtonElement;
-  const autoToggle = document.getElementById('auto-capture-toggle') as HTMLInputElement;
-  const autoStatus = document.getElementById('auto-status')!;
-  const recording = document.getElementById('recording')!;
-  const versionEl = document.getElementById('version')!;
+  const statusDot = document.getElementById('status-dot')!;
+  const statusText = document.getElementById('status-text')!;
+  const connectionText = document.getElementById('connection-text')!;
+  const powerToggle = document.getElementById('power-toggle') as HTMLInputElement;
+  const modeLabel = document.getElementById('mode-label')!;
+  const slider = document.querySelector('.slider')!;
 
-  // Show version
-  const manifest = chrome.runtime.getManifest();
-  versionEl.textContent = `Version ${manifest.version}`;
+  let isConnected = false;
+  let isInitialLoad = true;
 
   // Check connection status
-  checkConnectionStatus();
-
-  // Test capture button
-  testButton.addEventListener('click', async () => {
-    testButton.disabled = true;
-    testButton.textContent = 'Capturing...';
-    
-    try {
-      const response = await chrome.runtime.sendMessage({
-        type: 'capture_viewport'
-      });
-      
-      if (response.success) {
-        testButton.textContent = 'Success! Check console';
-        console.log('Screenshot captured:', response.data?.screenshot?.substring(0, 50) + '...');
-      } else {
-        testButton.textContent = 'Failed: ' + response.error;
-      }
-    } catch (error) {
-      testButton.textContent = 'Error: ' + error;
-    }
-    
-    setTimeout(() => {
-      testButton.disabled = false;
-      testButton.textContent = 'Test Screenshot Capture';
-    }, 2000);
-  });
-
-  // Reconnect button
-  reconnectButton.addEventListener('click', () => {
-    chrome.runtime.sendMessage({ type: 'reconnect' });
-    setTimeout(checkConnectionStatus, 1000);
-  });
-
-  // View history button
-  viewHistoryButton.addEventListener('click', async () => {
-    const response = await chrome.runtime.sendMessage({ type: 'GET_CAPTURE_HISTORY' });
-    console.log('Capture History:', response.history);
-    alert(`${response.history?.length || 0} captures in history. Check console for details.`);
-  });
-
-  // Auto capture toggle
-  chrome.storage.local.get('autoCaptureEnabled', (result) => {
-    autoToggle.checked = result.autoCaptureEnabled || false;
-    updateAutoStatus(result.autoCaptureEnabled || false);
-  });
-
-  autoToggle.addEventListener('change', async () => {
-    const response = await chrome.runtime.sendMessage({ type: 'TOGGLE_AUTO_CAPTURE' });
-    updateAutoStatus(response.enabled);
-  });
-
-  function updateAutoStatus(enabled: boolean) {
-    if (enabled) {
-      autoStatus.textContent = '🟢 ACTIVE - Monitoring all page events';
-      autoStatus.className = 'auto-status active';
-      recording.className = 'recording active';
-    } else {
-      autoStatus.textContent = 'Off - Manual capture only';
-      autoStatus.className = 'auto-status';
-      recording.className = 'recording';
-    }
-  }
-
   async function checkConnectionStatus() {
     try {
       const response = await chrome.runtime.sendMessage({ type: 'check_connection' });
       
       if (response && response.connected) {
-        statusEl.className = 'status connected';
-        statusEl.textContent = 'Connected to MCP Server';
+        isConnected = true;
+        statusDot.className = 'status-dot connected';
+        connectionText.textContent = 'Connected';
+        connectionText.className = 'connection-text connected';
+        
+        // Update status text based on toggle state
+        if (powerToggle.checked) {
+          statusText.innerHTML = '<span>●</span> Monitoring page activity';
+          statusText.className = 'status-text active';
+        } else {
+          statusText.innerHTML = 'Extension disabled';
+          statusText.className = 'status-text';
+        }
       } else {
-        statusEl.className = 'status disconnected';
-        statusEl.textContent = 'Not connected to MCP Server';
+        isConnected = false;
+        statusDot.className = 'status-dot disconnected';
+        connectionText.textContent = 'Not Connected';
+        connectionText.className = 'connection-text';
+        statusText.textContent = 'Waiting for MCP server';
+        statusText.className = 'status-text';
       }
     } catch (error) {
-      statusEl.className = 'status disconnected';
-      statusEl.textContent = 'Extension error';
+      isConnected = false;
+      statusDot.className = 'status-dot disconnected';
+      statusText.textContent = 'Extension error';
+      statusText.className = 'status-text';
     }
   }
+
+  // Load saved state (default to ON for auto-mode)
+  chrome.storage.local.get('autoCaptureEnabled', (result) => {
+    // Add no-transition class to prevent animation on load
+    slider.classList.add('no-transition');
+    
+    // Default to true if not set
+    const enabled = result.autoCaptureEnabled !== false;
+    powerToggle.checked = enabled;
+    updateToggleState(enabled);
+    
+    // Remove no-transition class after a small delay
+    setTimeout(() => {
+      slider.classList.remove('no-transition');
+      isInitialLoad = false;
+    }, 50);
+    
+    // If first time, save the default
+    if (result.autoCaptureEnabled === undefined) {
+      chrome.storage.local.set({ autoCaptureEnabled: true });
+      // Enable auto-capture by default
+      chrome.runtime.sendMessage({ 
+        type: 'TOGGLE_AUTO_CAPTURE',
+        enabled: true 
+      });
+    }
+  });
+
+  // Handle toggle change
+  powerToggle.addEventListener('change', async () => {
+    const enabled = powerToggle.checked;
+    
+    // Save state
+    chrome.storage.local.set({ autoCaptureEnabled: enabled });
+    
+    // Update UI immediately
+    updateToggleState(enabled);
+    
+    // Send message to background
+    const response = await chrome.runtime.sendMessage({ 
+      type: 'TOGGLE_AUTO_CAPTURE',
+      enabled: enabled
+    });
+    
+    // Update connection status
+    checkConnectionStatus();
+  });
+
+  function updateToggleState(enabled: boolean) {
+    if (enabled) {
+      modeLabel.textContent = 'AUTO';
+      if (isConnected) {
+        statusText.innerHTML = '<span>●</span> Monitoring page activity';
+        statusText.className = 'status-text active';
+      } else {
+        statusText.textContent = 'Waiting for MCP server';
+        statusText.className = 'status-text';
+      }
+    } else {
+      modeLabel.textContent = 'OFF';
+      statusText.textContent = 'Extension disabled';
+      statusText.className = 'status-text';
+    }
+  }
+
+  // Initial status check
+  checkConnectionStatus();
+  
+  // Recheck connection every 2 seconds
+  setInterval(checkConnectionStatus, 2000);
 });

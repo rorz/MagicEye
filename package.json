@@ -19,7 +19,12 @@
     "dev:extension": "tsx scripts/build.ts --target=extension --watch",
     "package:extension": "cd dist/extension && zip -r ../../magiceye-extension.zip .",
     "test:server": "node index.js --server",
-    "test:setup": "node index.js"
+    "test:setup": "node index.js",
+    "sync:version": "node scripts/sync-version.js",
+    "prepublishOnly": "node scripts/sync-version.js && pnpm run build",
+    "version:bump": "npm version patch && pnpm sync:version",
+    "version:minor": "npm version minor && pnpm sync:version", 
+    "version:major": "npm version major && pnpm sync:version"
   },
   "keywords": [
     "mcp",

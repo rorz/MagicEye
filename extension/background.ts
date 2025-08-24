@@ -132,10 +132,16 @@ chrome.runtime.onStartup.addListener(() => {
 
 // Auto-capture queue for Claude
 const captureHistory: any[] = [];
-let autoCaptureEnabled = false;
+let autoCaptureEnabled = true; // Default to true
 
 chrome.storage.local.get('autoCaptureEnabled', (result) => {
-  autoCaptureEnabled = result.autoCaptureEnabled || false;
+  // Default to true if not explicitly set to false
+  autoCaptureEnabled = result.autoCaptureEnabled !== false;
+  
+  // If first time, save the default
+  if (result.autoCaptureEnabled === undefined) {
+    chrome.storage.local.set({ autoCaptureEnabled: true });
+  }
 });
 
 chrome.runtime.onMessage.addListener((request: ScreenshotRequest | { type: 'check_connection' | 'reconnect' | 'AUTO_CAPTURE' | 'GET_CAPTURE_HISTORY' | 'TOGGLE_AUTO_CAPTURE' }, sender, sendResponse) => {
@@ -212,7 +218,13 @@ chrome.runtime.onMessage.addListener((request: ScreenshotRequest | { type: 'chec
   }
 
   if (request.type === 'TOGGLE_AUTO_CAPTURE') {
-    autoCaptureEnabled = !autoCaptureEnabled;
+    // Accept explicit enabled value or toggle
+    if ('enabled' in request) {
+      autoCaptureEnabled = request.enabled;
+    } else {
+      autoCaptureEnabled = !autoCaptureEnabled;
+    }
+    
     chrome.storage.local.set({ autoCaptureEnabled });
     
     // Notify all tabs
