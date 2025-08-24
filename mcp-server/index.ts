@@ -449,7 +449,8 @@ async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
   
-  console.error('MagicEye MCP server running');
+  // Simple startup message to stderr (shows in Claude)
+  console.error('👁️ MagicEye ready');
 }
 
 main().catch((error) => {

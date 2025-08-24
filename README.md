@@ -51,7 +51,7 @@ Claude now has eyes. No file management. No manual configuration. It just works.
 
 ```bash
 # Clone the repo
-git clone https://github.com/YOUR_USERNAME/magiceye.git
+git clone https://github.com/rorz/MagicEye.git
 cd magiceye
 
 # Install dependencies
@@ -119,7 +119,7 @@ pnpm run package:extension
 
 ## 🤝 Contributing
 
-Contributions welcome! Please check out the [issues](https://github.com/YOUR_USERNAME/magiceye/issues) page.
+Contributions welcome! Please check out the [issues](https://github.com/rorz/MagicEye/issues) page.
 
 ## 🔧 Troubleshooting
 
