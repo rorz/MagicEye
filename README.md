@@ -7,7 +7,7 @@ Capture screenshots directly in your browser and share them instantly with AI co
 ## ✨ Install in 30 Seconds
 
 ```bash
-npx magiceye
+npx magiceyess
 ```
 
 That's it. The setup wizard will:
@@ -95,7 +95,7 @@ pnpm run package:extension
   Screenshots                         on each start
 ```
 
-**The Magic:** Claude's config uses `npx -y magiceye --server`, so it always fetches and runs the latest version. No local installation needed.
+**The Magic:** Claude's config uses `npx -y magiceyes --server`, so it always fetches and runs the latest version. No local installation needed.
 
 ## 🚀 Roadmap
 
@@ -129,7 +129,7 @@ Contributions welcome! Please check out the [issues](https://github.com/rorz/Mag
 3. Restart Claude Code after setup
 
 ### MCP server not working?
-Run `npx magiceye` again to reconfigure. Make sure to use `--scope user` if using Claude CLI manually.
+Run `npx magiceyes` again to reconfigure. Make sure to use `--scope user` if using Claude CLI manually.
 
 ### Manual Configuration
 If automatic setup fails, add this to `~/.config/claude/mcp-settings.json`:
@@ -138,7 +138,7 @@ If automatic setup fails, add this to `~/.config/claude/mcp-settings.json`:
   "mcpServers": {
     "magiceye": {
       "command": "npx",
-      "args": ["-y", "magiceye", "--server"]
+      "args": ["-y", "magiceyes", "--server"]
     }
   }
 }

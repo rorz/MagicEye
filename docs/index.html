@@ -7,95 +7,111 @@
     <meta name="description" content="Capture screenshots directly in your browser and share them instantly with AI coding assistants. Zero friction visual context.">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="icon" type="image/png" href="https://raw.githubusercontent.com/rorz/MagicEye/main/extension/icon-128.png">
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    animation: {
-                        'float': 'float 6s ease-in-out infinite',
-                        'pulse-slow': 'pulse 3s ease-in-out infinite',
-                    },
-                    keyframes: {
-                        float: {
-                            '0%, 100%': { transform: 'translateY(0)' },
-                            '50%': { transform: 'translateY(-20px)' },
-                        }
-                    }
-                }
-            }
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap');
+        * {
+            font-family: 'JetBrains Mono', monospace;
         }
-    </script>
+        .sketch-border {
+            border: 2px solid black;
+            border-radius: 0;
+            position: relative;
+            box-shadow: 3px 3px 0 rgba(0,0,0,0.1);
+        }
+        .sketch-border:hover {
+            box-shadow: 4px 4px 0 rgba(0,0,0,0.15);
+            transform: translate(-1px, -1px);
+        }
+        .handwritten {
+            font-family: 'JetBrains Mono', monospace;
+            transform: rotate(-0.5deg);
+        }
+        .dotted-line {
+            border-bottom: 2px dotted black;
+        }
+        .dashed-box {
+            border: 2px dashed black;
+            border-radius: 0;
+        }
+        @media (max-width: 768px) {
+            .text-6xl { font-size: 2.5rem; }
+            .text-3xl { font-size: 1.5rem; }
+        }
+    </style>
 </head>
-<body class="bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 min-h-screen text-white">
+<body class="bg-white min-h-screen text-black">
     <!-- Hero Section -->
-    <div class="container mx-auto px-6 py-16">
-        <nav class="flex justify-between items-center mb-16">
-            <div class="flex items-center space-x-2">
-                <img src="https://raw.githubusercontent.com/rorz/MagicEye/main/extension/icon-48.png" alt="MagicEye" class="w-8 h-8">
-                <span class="text-xl font-bold">MagicEye</span>
+    <div class="max-w-5xl mx-auto px-8 py-12">
+        <nav class="flex justify-between items-center mb-20 pb-8 dotted-line">
+            <div class="flex items-center space-x-3">
+                <span class="text-2xl font-bold">[◉]</span>
+                <span class="text-sm font-medium tracking-wider">MAGICEYE</span>
             </div>
-            <div class="flex space-x-6">
-                <a href="https://github.com/rorz/MagicEye" class="hover:text-purple-400 transition">GitHub</a>
-                <a href="https://github.com/rorz/MagicEye#-install-in-30-seconds" class="hover:text-purple-400 transition">Docs</a>
+            <div class="flex space-x-8 text-xs">
+                <a href="https://github.com/rorz/MagicEye" class="hover:underline">GITHUB</a>
+                <a href="https://github.com/rorz/MagicEye#-install-in-30-seconds" class="hover:underline">DOCS</a>
             </div>
         </nav>
 
         <!-- Hero Content -->
-        <div class="max-w-4xl mx-auto text-center">
-            <h1 class="text-6xl font-bold mb-6 bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-                Give Your Code Assistant Eyes
+        <div class="mb-20">
+            <h1 class="text-6xl font-bold mb-6 leading-none tracking-tight">
+                GIVE YOUR CODE<br/>
+                ASSISTANT EYES
             </h1>
-            <p class="text-xl text-gray-300 mb-12">
-                Capture screenshots directly in your browser and share them instantly with AI coding assistants. 
-                Zero friction visual context.
-            </p>
+            <div class="max-w-2xl">
+                <p class="text-sm mb-8 leading-relaxed opacity-90">
+                    Capture screenshots directly in your browser and share them instantly with AI coding assistants. 
+                    Zero friction visual context.
+                </p>
+            </div>
 
             <!-- Install Command -->
-            <div class="bg-slate-800/50 backdrop-blur rounded-lg p-6 max-w-md mx-auto mb-8 border border-purple-500/20">
-                <p class="text-sm text-gray-400 mb-2">Install in 30 seconds:</p>
-                <div class="flex items-center justify-between bg-slate-900 rounded px-4 py-3">
-                    <code class="text-purple-400">npx magiceye</code>
-                    <button onclick="navigator.clipboard.writeText('npx magiceye')" class="text-gray-400 hover:text-white transition">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
-                        </svg>
+            <div class="my-16">
+                <p class="text-xs mb-3 uppercase tracking-wider">Install in 30 seconds:</p>
+                <div class="sketch-border inline-block px-6 py-4 bg-gray-50">
+                    <code class="text-sm font-bold">$ npx magiceyes</code>
+                    <button onclick="navigator.clipboard.writeText('npx magiceyes')" class="ml-4 text-xs hover:underline">
+                        [COPY]
                     </button>
                 </div>
             </div>
 
-            <div class="flex justify-center space-x-4">
-                <a href="https://github.com/rorz/MagicEye" class="bg-purple-600 hover:bg-purple-700 px-6 py-3 rounded-lg font-semibold transition transform hover:scale-105">
-                    View on GitHub
+            <div class="flex space-x-6">
+                <a href="https://github.com/rorz/MagicEye" class="dashed-box px-8 py-4 text-xs font-bold hover:bg-black hover:text-white transition-all hover:shadow-lg">
+                    → VIEW ON GITHUB
                 </a>
-                <a href="#how-it-works" class="border border-purple-600 hover:bg-purple-600/20 px-6 py-3 rounded-lg font-semibold transition">
-                    How It Works
+                <a href="#how-it-works" class="sketch-border px-8 py-4 text-xs font-bold bg-black text-white hover:bg-white hover:text-black transition-all hover:shadow-lg">
+                    HOW IT WORKS
                 </a>
             </div>
         </div>
 
         <!-- Visual Demo -->
-        <div class="mt-20 relative">
-            <div class="absolute inset-0 bg-gradient-to-r from-purple-600/20 to-pink-600/20 blur-3xl"></div>
-            <div class="relative bg-slate-800/50 backdrop-blur rounded-xl p-8 border border-purple-500/20 max-w-3xl mx-auto">
-                <div class="flex items-center space-x-2 mb-4">
-                    <div class="w-3 h-3 bg-red-500 rounded-full"></div>
-                    <div class="w-3 h-3 bg-yellow-500 rounded-full"></div>
-                    <div class="w-3 h-3 bg-green-500 rounded-full"></div>
+        <div class="mt-24 mb-20">
+            <div class="sketch-border p-8 bg-gray-50">
+                <div class="flex items-center space-x-2 mb-6">
+                    <span class="text-xs">TERMINAL</span>
+                    <div class="flex space-x-1">
+                        <span>○</span>
+                        <span>○</span>
+                        <span>○</span>
+                    </div>
                 </div>
-                <div class="space-y-4 font-mono text-sm">
-                    <div class="text-gray-400">
-                        <span class="text-purple-400">$</span> npx magiceye
+                <div class="space-y-3 text-xs">
+                    <div>
+                        <span class="font-bold">$</span> npx magiceye
                     </div>
-                    <div class="text-green-400 animate-pulse-slow">
-                        ✨ Setting up MagicEye...
+                    <div class="pl-4">
+                        → Setting up MagicEye...
                     </div>
-                    <div class="text-gray-300">
-                        ✅ Chrome extension installed<br>
-                        ✅ Claude configured automatically<br>
-                        ✅ Connection tested successfully
+                    <div class="pl-4 space-y-1">
+                        <div>[✓] Chrome extension installed</div>
+                        <div>[✓] Claude configured automatically</div>
+                        <div>[✓] Connection tested successfully</div>
                     </div>
-                    <div class="text-purple-400">
-                        🎯 Ready! Click the MagicEye icon in Chrome to capture.
+                    <div class="pl-4 mt-4 font-bold">
+                        Ready! Click the MagicEye icon in Chrome to capture.
                     </div>
                 </div>
             </div>
@@ -103,108 +119,109 @@
     </div>
 
     <!-- How It Works -->
-    <section id="how-it-works" class="container mx-auto px-6 py-20">
-        <h2 class="text-4xl font-bold text-center mb-16">How It Works</h2>
-        <div class="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
-            <div class="text-center">
-                <div class="bg-purple-600/20 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <span class="text-2xl">👆</span>
+    <section id="how-it-works" class="max-w-5xl mx-auto px-8 py-24 border-t-2 border-black">
+        <h2 class="text-3xl font-bold mb-16 uppercase tracking-wider">How It Works</h2>
+        <div class="grid md:grid-cols-3 gap-12">
+            <div>
+                <div class="dashed-box w-20 h-20 flex items-center justify-center mb-6">
+                    <span class="text-3xl font-bold">01</span>
                 </div>
-                <h3 class="text-xl font-semibold mb-2">1. Click</h3>
-                <p class="text-gray-400">Click the MagicEye icon in Chrome</p>
+                <h3 class="text-sm font-bold mb-2 uppercase">Click</h3>
+                <p class="text-xs leading-relaxed">Click the MagicEye icon in Chrome</p>
             </div>
-            <div class="text-center">
-                <div class="bg-purple-600/20 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <span class="text-2xl">📸</span>
+            <div>
+                <div class="dashed-box w-20 h-20 flex items-center justify-center mb-6">
+                    <span class="text-3xl font-bold">02</span>
                 </div>
-                <h3 class="text-xl font-semibold mb-2">2. Capture</h3>
-                <p class="text-gray-400">Capture any webpage or element</p>
+                <h3 class="text-sm font-bold mb-2 uppercase">Capture</h3>
+                <p class="text-xs leading-relaxed">Capture any webpage or element</p>
             </div>
-            <div class="text-center">
-                <div class="bg-purple-600/20 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <span class="text-2xl">🤖</span>
+            <div>
+                <div class="dashed-box w-20 h-20 flex items-center justify-center mb-6">
+                    <span class="text-3xl font-bold">03</span>
                 </div>
-                <h3 class="text-xl font-semibold mb-2">3. Ask</h3>
-                <p class="text-gray-400">Ask Claude "What do you see?"</p>
+                <h3 class="text-sm font-bold mb-2 uppercase">Ask</h3>
+                <p class="text-xs leading-relaxed">Ask Claude "What do you see?"</p>
             </div>
         </div>
     </section>
 
     <!-- Features -->
-    <section class="container mx-auto px-6 py-20">
-        <h2 class="text-4xl font-bold text-center mb-16">Features</h2>
-        <div class="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-            <div class="bg-slate-800/30 backdrop-blur rounded-lg p-6 border border-purple-500/20">
-                <h3 class="text-xl font-semibold mb-3 text-purple-400">🚀 Instant Screenshots</h3>
-                <p class="text-gray-400">Capture viewport, full page, or specific elements with one click</p>
+    <section class="max-w-5xl mx-auto px-8 py-24 border-t-2 border-black">
+        <h2 class="text-3xl font-bold mb-16 uppercase tracking-wider">Features</h2>
+        <div class="grid md:grid-cols-2 gap-8">
+            <div class="sketch-border p-6">
+                <h3 class="text-sm font-bold mb-3 uppercase">→ Instant Screenshots</h3>
+                <p class="text-xs leading-relaxed">Capture viewport, full page, or specific elements with one click</p>
             </div>
-            <div class="bg-slate-800/30 backdrop-blur rounded-lg p-6 border border-purple-500/20">
-                <h3 class="text-xl font-semibold mb-3 text-purple-400">⚡ Zero Config</h3>
-                <p class="text-gray-400">Uses npx so Claude always runs the latest version</p>
+            <div class="sketch-border p-6">
+                <h3 class="text-sm font-bold mb-3 uppercase">→ Zero Config</h3>
+                <p class="text-xs leading-relaxed">Uses npx so Claude always runs the latest version</p>
             </div>
-            <div class="bg-slate-800/30 backdrop-blur rounded-lg p-6 border border-purple-500/20">
-                <h3 class="text-xl font-semibold mb-3 text-purple-400">🌍 User Scope</h3>
-                <p class="text-gray-400">Works across all your projects automatically</p>
+            <div class="sketch-border p-6">
+                <h3 class="text-sm font-bold mb-3 uppercase">→ User Scope</h3>
+                <p class="text-xs leading-relaxed">Works across all your projects automatically</p>
             </div>
-            <div class="bg-slate-800/30 backdrop-blur rounded-lg p-6 border border-purple-500/20">
-                <h3 class="text-xl font-semibold mb-3 text-purple-400">🔒 Privacy First</h3>
-                <p class="text-gray-400">Everything runs locally, no external servers</p>
+            <div class="sketch-border p-6">
+                <h3 class="text-sm font-bold mb-3 uppercase">→ Privacy First</h3>
+                <p class="text-xs leading-relaxed">Everything runs locally, no external servers</p>
             </div>
         </div>
     </section>
 
     <!-- Perfect For -->
-    <section class="container mx-auto px-6 py-20">
-        <h2 class="text-4xl font-bold text-center mb-16">Perfect For</h2>
-        <div class="max-w-3xl mx-auto">
-            <ul class="space-y-4">
+    <section class="max-w-5xl mx-auto px-8 py-24 border-t-2 border-black">
+        <h2 class="text-3xl font-bold mb-16 uppercase tracking-wider">Perfect For</h2>
+        <div class="max-w-3xl">
+            <ul class="space-y-3 text-xs">
                 <li class="flex items-start space-x-3">
-                    <span class="text-purple-400 mt-1">✓</span>
-                    <span class="text-gray-300">Debugging UI issues with visual context</span>
+                    <span class="font-bold">[✓]</span>
+                    <span>Debugging UI issues with visual context</span>
                 </li>
                 <li class="flex items-start space-x-3">
-                    <span class="text-purple-400 mt-1">✓</span>
-                    <span class="text-gray-300">Explaining layout problems without words</span>
+                    <span class="font-bold">[✓]</span>
+                    <span>Explaining layout problems without words</span>
                 </li>
                 <li class="flex items-start space-x-3">
-                    <span class="text-purple-400 mt-1">✓</span>
-                    <span class="text-gray-300">Sharing design implementations instantly</span>
+                    <span class="font-bold">[✓]</span>
+                    <span>Sharing design implementations instantly</span>
                 </li>
                 <li class="flex items-start space-x-3">
-                    <span class="text-purple-400 mt-1">✓</span>
-                    <span class="text-gray-300">Getting CSS help by showing, not telling</span>
+                    <span class="font-bold">[✓]</span>
+                    <span>Getting CSS help by showing, not telling</span>
                 </li>
                 <li class="flex items-start space-x-3">
-                    <span class="text-purple-400 mt-1">✓</span>
-                    <span class="text-gray-300">Understanding complex interfaces at a glance</span>
+                    <span class="font-bold">[✓]</span>
+                    <span>Understanding complex interfaces at a glance</span>
                 </li>
             </ul>
         </div>
     </section>
 
     <!-- CTA -->
-    <section class="container mx-auto px-6 py-20">
-        <div class="bg-gradient-to-r from-purple-600/20 to-pink-600/20 rounded-2xl p-12 text-center border border-purple-500/20">
-            <h2 class="text-3xl font-bold mb-4">Stop Describing. Start Showing.</h2>
-            <p class="text-gray-300 mb-8">Give your AI the context it needs.</p>
-            <div class="bg-slate-900/50 backdrop-blur rounded-lg p-4 max-w-xs mx-auto mb-8">
-                <code class="text-purple-400">npx magiceye</code>
+    <section class="max-w-5xl mx-auto px-8 py-24 border-t-2 border-black">
+        <div class="sketch-border p-12 text-center bg-black text-white">
+            <h2 class="text-2xl font-bold mb-4 uppercase tracking-wider">Stop Describing. Start Showing.</h2>
+            <p class="text-xs mb-8 uppercase tracking-wider">Give your AI the context it needs.</p>
+            <div class="dashed-box inline-block p-4 bg-white text-black mb-8">
+                <code class="text-sm font-bold">$ npx magiceyes</code>
             </div>
-            <a href="https://github.com/rorz/MagicEye" class="inline-block bg-purple-600 hover:bg-purple-700 px-8 py-4 rounded-lg font-semibold transition transform hover:scale-105">
-                Get Started on GitHub
+            <br/>
+            <a href="https://github.com/rorz/MagicEye" class="inline-block sketch-border px-8 py-4 bg-white text-black text-xs font-bold uppercase tracking-wider hover:bg-gray-100 transition-colors">
+                Get Started on GitHub →
             </a>
         </div>
     </section>
 
     <!-- Footer -->
-    <footer class="container mx-auto px-6 py-8 border-t border-gray-800">
-        <div class="flex justify-between items-center">
-            <div class="text-gray-400">
-                © 2024 MagicEye. MIT Licensed.
+    <footer class="max-w-5xl mx-auto px-8 py-8 border-t-2 border-black">
+        <div class="flex justify-between items-center text-xs">
+            <div>
+                © 2024 MAGICEYE. MIT LICENSED.
             </div>
             <div class="flex space-x-6">
-                <a href="https://github.com/rorz/MagicEye" class="text-gray-400 hover:text-white transition">GitHub</a>
-                <a href="https://github.com/rorz/MagicEye/issues" class="text-gray-400 hover:text-white transition">Issues</a>
+                <a href="https://github.com/rorz/MagicEye" class="hover:underline">GITHUB</a>
+                <a href="https://github.com/rorz/MagicEye/issues" class="hover:underline">ISSUES</a>
             </div>
         </div>
     </footer>

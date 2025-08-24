@@ -24,7 +24,7 @@ Perfect for:
 Features:
 • One-click screenshot capture
 • Full page, viewport, and element capture modes
-• Zero configuration setup - just run npx magiceye
+• Zero configuration setup - just run npx magiceyes
 • Direct WebSocket connection to your AI assistant
 • Works with any webpage or web application
 • Privacy-focused: all data stays local
@@ -33,7 +33,7 @@ Features:
 
 How it works:
 1. Install MagicEye from Chrome Web Store
-2. Run `npx magiceye` in your terminal (30-second setup)
+2. Run `npx magiceyes` in your terminal (30-second setup)
 3. Click the extension icon to capture
 4. Your AI assistant can now see what you see
 
@@ -54,7 +54,7 @@ After installing:
 
 1. Run setup command:
    ```
-   npx magiceye
+   npx magiceyes
    ```
 
 2. Restart Claude Code
