@@ -24,6 +24,60 @@ function keepServiceWorkerAlive() {
   }, 20000) as unknown as number;
 }
 
+// Update extension icon based on enabled state
+function updateExtensionIcon(enabled: boolean) {
+  if (enabled) {
+    // Eye open - normal icon
+    chrome.action.setIcon({
+      path: {
+        "16": "icon-16.png",
+        "48": "icon-48.png",
+        "128": "icon-128.png"
+      }
+    });
+  } else {
+    // Eye closed - create grayscale version using canvas
+    const canvas = new OffscreenCanvas(128, 128);
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      const img = new Image();
+      img.onload = () => {
+        // Draw the image
+        ctx.drawImage(img, 0, 0, 128, 128);
+        
+        // Get image data and apply grayscale + darkening
+        const imageData = ctx.getImageData(0, 0, 128, 128);
+        const data = imageData.data;
+        
+        for (let i = 0; i < data.length; i += 4) {
+          // Convert to grayscale
+          const gray = data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114;
+          // Apply darkening (30% brightness)
+          const darkened = gray * 0.3;
+          data[i] = darkened;     // Red
+          data[i + 1] = darkened; // Green
+          data[i + 2] = darkened; // Blue
+          // Keep alpha channel unchanged
+        }
+        
+        ctx.putImageData(imageData, 0, 0);
+        
+        // Convert canvas to image data and set as icon
+        canvas.convertToBlob().then(blob => {
+          const reader = new FileReader();
+          reader.onload = () => {
+            chrome.action.setIcon({
+              imageData: ctx.getImageData(0, 0, 128, 128)
+            });
+          };
+          reader.readAsDataURL(blob);
+        });
+      };
+      img.src = 'icon-128.png';
+    }
+  }
+}
+
 function connectToMCPServer() {
   try {
     // Clear any pending reconnect timer
@@ -138,6 +192,9 @@ chrome.storage.local.get('autoCaptureEnabled', (result) => {
   // Default to true if not explicitly set to false
   autoCaptureEnabled = result.autoCaptureEnabled !== false;
   
+  // Update icon based on initial state
+  updateExtensionIcon(autoCaptureEnabled);
+  
   // If first time, save the default
   if (result.autoCaptureEnabled === undefined) {
     chrome.storage.local.set({ autoCaptureEnabled: true });
@@ -226,6 +283,9 @@ chrome.runtime.onMessage.addListener((request: ScreenshotRequest | { type: 'chec
     }
     
     chrome.storage.local.set({ autoCaptureEnabled });
+    
+    // Update extension icon based on state
+    updateExtensionIcon(autoCaptureEnabled);
     
     // Notify all tabs
     chrome.tabs.query({}, (tabs) => {

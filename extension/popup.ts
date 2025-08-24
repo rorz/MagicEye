@@ -5,6 +5,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const powerToggle = document.getElementById('power-toggle') as HTMLInputElement;
   const modeLabel = document.getElementById('mode-label')!;
   const slider = document.querySelector('.slider')!;
+  const logoIcon = document.getElementById('logo-icon') as HTMLImageElement;
 
   let isConnected = false;
   let isInitialLoad = true;
@@ -16,26 +17,27 @@ document.addEventListener('DOMContentLoaded', () => {
       
       if (response && response.connected) {
         isConnected = true;
-        statusDot.className = 'status-dot connected';
-        connectionText.textContent = 'Connected';
-        connectionText.className = 'connection-text connected';
         
-        // Update status text based on toggle state
+        // Update connection indicator based on toggle state
         if (powerToggle.checked) {
-          statusText.innerHTML = '<span>●</span> Monitoring page activity';
-          statusText.className = 'status-text active';
+          statusDot.className = 'status-dot connected';
+          connectionText.textContent = 'Connected';
+          connectionText.className = 'connection-text connected';
         } else {
-          statusText.innerHTML = 'Extension disabled';
-          statusText.className = 'status-text';
+          // Don't show as connected when extension is OFF
+          statusDot.className = 'status-dot disconnected';
+          connectionText.textContent = 'Disabled';
+          connectionText.className = 'connection-text';
         }
       } else {
         isConnected = false;
         statusDot.className = 'status-dot disconnected';
         connectionText.textContent = 'Not Connected';
         connectionText.className = 'connection-text';
-        statusText.textContent = 'Waiting for MCP server';
-        statusText.className = 'status-text';
       }
+      
+      // Update status text through the single source of truth
+      updateToggleState(powerToggle.checked);
     } catch (error) {
       isConnected = false;
       statusDot.className = 'status-dot disconnected';
@@ -93,9 +95,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function updateToggleState(enabled: boolean) {
     if (enabled) {
-      modeLabel.textContent = 'AUTO';
+      modeLabel.textContent = 'ON';
+      logoIcon.classList.remove('eye-closed');
       if (isConnected) {
-        statusText.innerHTML = '<span>●</span> Monitoring page activity';
+        statusText.innerHTML = 'Monitoring page activity';
         statusText.className = 'status-text active';
       } else {
         statusText.textContent = 'Waiting for MCP server';
@@ -103,6 +106,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     } else {
       modeLabel.textContent = 'OFF';
+      logoIcon.classList.add('eye-closed');
       statusText.textContent = 'Extension disabled';
       statusText.className = 'status-text';
     }

@@ -13,7 +13,7 @@ import { execSync } from 'child_process';
 
 const server = new Server(
   {
-    name: 'magiceye',
+    name: 'magiceyes',
     version: '0.1.0',
   },
   {

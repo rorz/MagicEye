@@ -62,14 +62,22 @@
     .logo-mark {
       width: 24px;
       height: 24px;
-      background: #000;
       position: relative;
       display: flex;
       align-items: center;
       justify-content: center;
-      color: #FFF;
-      font-weight: 700;
-      font-size: 14px;
+    }
+    
+    .logo-mark img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      transition: filter 0.3s ease, opacity 0.3s ease;
+    }
+    
+    .logo-mark img.eye-closed {
+      filter: grayscale(100%) brightness(0.3);
+      opacity: 0.7;
     }
     
     .title {
@@ -264,7 +272,9 @@
   <div class="container">
     <div class="header">
       <div class="logo-group">
-        <div class="logo-mark">◉</div>
+        <div class="logo-mark">
+          <img id="logo-icon" src="icon-128.png" alt="MagicEyes">
+        </div>
         <span class="title">MagicEyes</span>
       </div>
       <div class="status-indicator">
