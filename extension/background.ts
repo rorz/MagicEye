@@ -3,14 +3,56 @@ import type { ScreenshotRequest, ScreenshotResponse } from '../shared/types';
 let ws: WebSocket | null = null;
 let isConnected = false;
 const messageQueue: Map<string, (response: ScreenshotResponse) => void> = new Map();
+let reconnectDelay = 500; // Start with 500ms for faster initial connection
+let reconnectTimer: number | null = null;
+let pingInterval: number | null = null;
+let keepAliveInterval: number | null = null;
+
+// Keep service worker alive
+function keepServiceWorkerAlive() {
+  // Clear existing interval if any
+  if (keepAliveInterval) {
+    clearInterval(keepAliveInterval);
+  }
+  
+  // Ping the service worker every 20 seconds to prevent it from being suspended
+  keepAliveInterval = setInterval(() => {
+    // Simply accessing chrome API keeps the worker alive
+    chrome.storage.local.get('keepAlive', () => {
+      console.log('Service worker keep-alive ping');
+    });
+  }, 20000) as unknown as number;
+}
 
 function connectToMCPServer() {
   try {
+    // Clear any pending reconnect timer
+    if (reconnectTimer) {
+      clearTimeout(reconnectTimer);
+      reconnectTimer = null;
+    }
+    
     ws = new WebSocket('ws://localhost:9559');
     
     ws.onopen = () => {
       console.log('Connected to MCP server via WebSocket');
       isConnected = true;
+      reconnectDelay = 500; // Reset delay on successful connection
+      
+      // Start keep-alive
+      keepServiceWorkerAlive();
+      
+      // Start sending pings to server every 25 seconds
+      if (pingInterval) {
+        clearInterval(pingInterval);
+      }
+      pingInterval = setInterval(() => {
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ type: 'ping' }));
+          console.log('Sent ping to MCP server');
+        }
+      }, 25000) as unknown as number;
+      
       // Notify popup about connection status
       chrome.runtime.sendMessage({ type: 'connection_status', connected: true }).catch(() => {});
     };
@@ -18,13 +60,24 @@ function connectToMCPServer() {
     ws.onmessage = async (event) => {
       try {
         const request = JSON.parse(event.data);
+        
+        // Handle pong response
+        if (request.type === 'pong') {
+          console.log('Received pong from MCP server');
+          return;
+        }
+        
         console.log('Received request from MCP:', request);
         
         // Handle screenshot request from MCP server
         if (request.id && request.type) {
           const response = await handleScreenshotRequest(request);
           // Send response back with the same ID
-          ws?.send(JSON.stringify({ id: request.id, ...response }));
+          if (ws && ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({ id: request.id, ...response }));
+          } else {
+            console.error('WebSocket not open, cannot send response');
+          }
         }
       } catch (error) {
         console.error('Error handling message:', error);
@@ -35,26 +88,45 @@ function connectToMCPServer() {
       console.log('Disconnected from MCP server');
       isConnected = false;
       ws = null;
+      
+      // Clear intervals
+      if (pingInterval) {
+        clearInterval(pingInterval);
+        pingInterval = null;
+      }
+      
       chrome.runtime.sendMessage({ type: 'connection_status', connected: false }).catch(() => {});
-      // Attempt to reconnect after 5 seconds
-      setTimeout(connectToMCPServer, 5000);
+      
+      // Exponential backoff for reconnection (max 10 seconds for better responsiveness)
+      reconnectDelay = Math.min(reconnectDelay * 2, 10000);
+      console.log(`Reconnecting in ${reconnectDelay}ms...`);
+      
+      reconnectTimer = setTimeout(connectToMCPServer, reconnectDelay) as unknown as number;
     };
     
     ws.onerror = (error) => {
       console.error('WebSocket error:', error);
+      // Connection will be retried in onclose handler
     };
   } catch (error) {
     console.error('Failed to connect to MCP server:', error);
-    setTimeout(connectToMCPServer, 5000);
+    
+    // Exponential backoff for reconnection (max 10 seconds)
+    reconnectDelay = Math.min(reconnectDelay * 2, 10000);
+    console.log(`Reconnecting in ${reconnectDelay}ms...`);
+    
+    reconnectTimer = setTimeout(connectToMCPServer, reconnectDelay) as unknown as number;
   }
 }
 
 chrome.runtime.onInstalled.addListener(() => {
   console.log('MagicEye extension installed');
+  keepServiceWorkerAlive(); // Start keep-alive immediately
   connectToMCPServer();
 });
 
 chrome.runtime.onStartup.addListener(() => {
+  keepServiceWorkerAlive(); // Start keep-alive immediately
   connectToMCPServer();
 });
 
@@ -73,9 +145,21 @@ chrome.runtime.onMessage.addListener((request: ScreenshotRequest | { type: 'chec
   }
   
   if (request.type === 'reconnect') {
+    // Reset reconnect delay for manual reconnection
+    reconnectDelay = 500;
+    
+    // Clear any pending reconnect timer
+    if (reconnectTimer) {
+      clearTimeout(reconnectTimer);
+      reconnectTimer = null;
+    }
+    
+    // Close existing connection if any
     if (ws) {
       ws.close();
     }
+    
+    // Reconnect immediately
     connectToMCPServer();
     sendResponse({ success: true });
     return false;
@@ -107,10 +191,14 @@ chrome.runtime.onMessage.addListener((request: ScreenshotRequest | { type: 'chec
         };
         
         // Send to MCP through WebSocket
-        ws?.send(JSON.stringify({
-          type: 'auto_capture_event',
-          data: enrichedCapture
-        }));
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({
+            type: 'auto_capture_event',
+            data: enrichedCapture
+          }));
+        } else {
+          console.log('WebSocket not open, skipping auto-capture send');
+        }
       });
     }
 
@@ -152,7 +240,7 @@ async function handleScreenshotRequest(request: ScreenshotRequest): Promise<Scre
   try {
     let targetTab;
     
-    // If URL is provided, find and switch to that tab
+    // If URL is provided, find that specific tab
     if (request.url) {
       // Find all tabs that match the URL (could be partial match)
       const allTabs = await chrome.tabs.query({});
@@ -167,11 +255,7 @@ async function handleScreenshotRequest(request: ScreenshotRequest): Promise<Scre
       
       if (matchingTabs.length > 0) {
         targetTab = matchingTabs[0];
-        // Make this tab active
-        await chrome.tabs.update(targetTab.id!, { active: true });
-        await chrome.windows.update(targetTab.windowId!, { focused: true });
-        // Small delay to ensure tab is fully focused
-        await new Promise(resolve => setTimeout(resolve, 100));
+        // We can now capture ANY tab, visible or not!
       } else {
         return { success: false, error: `No tab found with URL: ${request.url}` };
       }
@@ -187,23 +271,84 @@ async function handleScreenshotRequest(request: ScreenshotRequest): Promise<Scre
 
     switch (request.type) {
       case 'capture_viewport': {
-        const screenshot = await chrome.tabs.captureVisibleTab(
-          targetTab.windowId,
-          { format: request.format || 'png' }
-        );
-        // Remove data URL prefix to get pure base64
-        const base64Data = screenshot.replace(/^data:image\/[a-z]+;base64,/, '');
-        return { success: true, data: { screenshot: base64Data } };
+        // Try to capture using debugger API for any tab (visible or not)
+        try {
+          // Attach debugger to the tab
+          await chrome.debugger.attach({ tabId: targetTab.id }, '1.3');
+          
+          // Capture screenshot using debugger protocol
+          const result = await chrome.debugger.sendCommand(
+            { tabId: targetTab.id },
+            'Page.captureScreenshot',
+            { format: request.format || 'png' }
+          );
+          
+          // Detach debugger
+          await chrome.debugger.detach({ tabId: targetTab.id });
+          
+          return { success: true, data: { screenshot: (result as any).data } };
+        } catch (debuggerError) {
+          console.warn('Debugger capture failed, falling back to visible tab capture:', debuggerError);
+          
+          // Fallback to regular capture if debugger fails (e.g., on chrome:// pages)
+          try {
+            const screenshot = await chrome.tabs.captureVisibleTab(
+              targetTab.windowId,
+              { format: request.format || 'png' }
+            );
+            const base64Data = screenshot.replace(/^data:image\/[a-z]+;base64,/, '');
+            return { success: true, data: { screenshot: base64Data } };
+          } catch (fallbackError) {
+            return { success: false, error: 'Failed to capture screenshot' };
+          }
+        }
       }
       
       case 'capture_full_page': {
-        // For now, capture viewport as full page requires more complex implementation
-        const screenshot = await chrome.tabs.captureVisibleTab(
-          targetTab.windowId,
-          { format: request.format || 'png' }
-        );
-        const base64Data = screenshot.replace(/^data:image\/[a-z]+;base64,/, '');
-        return { success: true, data: { screenshot: base64Data } };
+        // Try debugger API for full page capture
+        try {
+          await chrome.debugger.attach({ tabId: targetTab.id }, '1.3');
+          
+          // Get page metrics for full page capture
+          const metrics = await chrome.debugger.sendCommand(
+            { tabId: targetTab.id },
+            'Page.getLayoutMetrics',
+            {}
+          );
+          
+          // Capture full page
+          const result = await chrome.debugger.sendCommand(
+            { tabId: targetTab.id },
+            'Page.captureScreenshot',
+            { 
+              format: request.format || 'png',
+              captureBeyondViewport: true,
+              clip: {
+                x: 0,
+                y: 0,
+                width: (metrics as any).cssContentSize.width,
+                height: (metrics as any).cssContentSize.height,
+                scale: 1
+              }
+            }
+          );
+          
+          await chrome.debugger.detach({ tabId: targetTab.id });
+          
+          return { success: true, data: { screenshot: (result as any).data } };
+        } catch (error) {
+          // Fallback to viewport capture
+          try {
+            const screenshot = await chrome.tabs.captureVisibleTab(
+              targetTab.windowId,
+              { format: request.format || 'png' }
+            );
+            const base64Data = screenshot.replace(/^data:image\/[a-z]+;base64,/, '');
+            return { success: true, data: { screenshot: base64Data } };
+          } catch (fallbackError) {
+            return { success: false, error: 'Failed to capture full page' };
+          }
+        }
       }
       
       case 'capture_element': {
@@ -363,4 +508,5 @@ function getElementSource(selector: string, index: number) {
 }
 
 // Try to connect immediately when the background script loads
+keepServiceWorkerAlive(); // Start keep-alive immediately on script load
 connectToMCPServer();
