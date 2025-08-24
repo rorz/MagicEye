@@ -7,6 +7,9 @@ import {
   Tool
 } from '@modelcontextprotocol/sdk/types.js';
 import { connectToExtension, sendScreenshotRequest } from './bridge.js';
+import { readFileSync, existsSync } from 'fs';
+import { join } from 'path';
+import { execSync } from 'child_process';
 
 const server = new Server(
   {
@@ -21,13 +24,107 @@ const server = new Server(
 );
 
 // Define available tools
+// Store the default URL for this session
+let defaultTargetUrl: string | undefined;
+let detectedDevServer: string | undefined;
+
+// Detect running dev server from current project
+function detectDevServer(): string | undefined {
+  try {
+    // Check for package.json in current directory
+    const packageJsonPath = join(process.cwd(), 'package.json');
+    if (existsSync(packageJsonPath)) {
+      const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf8'));
+      
+      // Common patterns in scripts
+      const scripts = packageJson.scripts || {};
+      const devScript = scripts.dev || scripts.start || scripts['dev:local'] || '';
+      
+      // Extract port from scripts
+      let port: number | undefined;
+      
+      // Next.js patterns
+      if (devScript.includes('next dev')) {
+        const portMatch = devScript.match(/-p\s+(\d+)|--port\s+(\d+)/);
+        port = portMatch ? parseInt(portMatch[1] || portMatch[2]) : 3000; // Next.js defaults to 3000
+      }
+      // Vite/Nuxt patterns
+      else if (devScript.includes('vite') || devScript.includes('nuxt')) {
+        const portMatch = devScript.match(/--port\s+(\d+)/);
+        port = portMatch ? parseInt(portMatch[1]) : 
+               devScript.includes('nuxt') ? 3000 : 5173; // Nuxt defaults to 3000, Vite to 5173
+      }
+      // Create React App
+      else if (devScript.includes('react-scripts')) {
+        const portMatch = devScript.match(/PORT=(\d+)/);
+        port = portMatch ? parseInt(portMatch[1]) : 3000;
+      }
+      // Generic port patterns
+      else {
+        const portMatch = devScript.match(/(?:PORT=|--port\s+|-p\s+)(\d+)/);
+        port = portMatch ? parseInt(portMatch[1]) : undefined;
+      }
+      
+      // Check environment variables
+      if (!port && process.env.PORT) {
+        port = parseInt(process.env.PORT);
+      }
+      
+      // Check if a server is actually running on detected port
+      if (port) {
+        try {
+          execSync(`curl -s http://localhost:${port} > /dev/null 2>&1`, { timeout: 1000 });
+          console.error(`Detected dev server running on http://localhost:${port}`);
+          return `http://localhost:${port}`;
+        } catch {
+          // Server not running on this port
+        }
+      }
+      
+      // Try common ports if no specific port found
+      const commonPorts = [3000, 8080, 5173, 4200, 8000, 5000, 3001, 8081];
+      for (const p of commonPorts) {
+        try {
+          execSync(`curl -s http://localhost:${p} > /dev/null 2>&1`, { timeout: 500 });
+          console.error(`Found dev server running on http://localhost:${p}`);
+          return `http://localhost:${p}`;
+        } catch {
+          // Not running on this port
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Error detecting dev server:', error);
+  }
+  
+  return undefined;
+}
+
 const tools: Tool[] = [
+  {
+    name: 'set_target_url',
+    description: 'Set the default URL for all subsequent captures in this session',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        url: {
+          type: 'string',
+          description: 'URL to use as default for captures (e.g., http://localhost:3000)'
+        }
+      },
+      required: ['url']
+    }
+  },
   {
     name: 'capture_viewport',
     description: 'Capture a screenshot of the current browser viewport',
     inputSchema: {
       type: 'object',
       properties: {
+        url: {
+          type: 'string',
+          description: 'URL of the tab to capture (will switch to this tab automatically)'
+        },
         format: {
           type: 'string',
           enum: ['png', 'jpeg', 'webp'],
@@ -43,6 +140,10 @@ const tools: Tool[] = [
     inputSchema: {
       type: 'object',
       properties: {
+        url: {
+          type: 'string',
+          description: 'URL of the tab to capture (will switch to this tab automatically)'
+        },
         format: {
           type: 'string',
           enum: ['png', 'jpeg', 'webp'],
@@ -61,6 +162,10 @@ const tools: Tool[] = [
         selector: {
           type: 'string',
           description: 'CSS selector for the element to capture'
+        },
+        url: {
+          type: 'string',
+          description: 'URL of the tab to capture (will switch to this tab automatically)'
         },
         index: {
           type: 'number',
@@ -163,15 +268,45 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   
   try {
     switch (name) {
+      case 'set_target_url': {
+        defaultTargetUrl = args?.url;
+        return {
+          content: [
+            {
+              type: 'text',
+              text: `Default capture URL set to: ${defaultTargetUrl}`
+            }
+          ]
+        };
+      }
+      
       case 'capture_viewport': {
+        // Smart URL detection
+        let targetUrl = args?.url || defaultTargetUrl;
+        
+        // If no URL specified, try to detect dev server
+        if (!targetUrl) {
+          detectedDevServer = detectedDevServer || detectDevServer();
+          targetUrl = detectedDevServer;
+          
+          if (targetUrl) {
+            console.error(`Using auto-detected dev server: ${targetUrl}`);
+          }
+        }
+        
         const response = await sendScreenshotRequest({
           type: 'capture_viewport',
+          url: targetUrl,
           format: args?.format || 'png'
         });
         
         if (response.success && response.data?.screenshot) {
           return {
             content: [
+              {
+                type: 'text',
+                text: targetUrl ? `📸 Captured from: ${targetUrl}` : '📸 Captured from active tab'
+              },
               {
                 type: 'image',
                 data: response.data.screenshot,
@@ -187,6 +322,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       case 'capture_full_page': {
         const response = await sendScreenshotRequest({
           type: 'capture_full_page',
+          url: args?.url || defaultTargetUrl,  // Use provided URL or default
           format: args?.format || 'png'
         });
         
@@ -209,6 +345,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const response = await sendScreenshotRequest({
           type: 'capture_element',
           selector: args?.selector,
+          url: args?.url || defaultTargetUrl,  // Use provided URL or default
           index: args?.index || 0,
           padding: args?.padding || 0,
           format: args?.format || 'png'

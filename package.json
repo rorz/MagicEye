@@ -8,11 +8,14 @@
   },
   "files": [
     "index.js",
-    "server.js",
+    "dist/mcp-server.js",
+    "dist/bridge.js",
     "README.md"
   ],
   "scripts": {
+    "build": "tsx scripts/build.ts",
     "build:extension": "tsx scripts/build.ts --target=extension",
+    "build:server": "tsx scripts/build.ts --target=server",
     "dev:extension": "tsx scripts/build.ts --target=extension --watch",
     "package:extension": "cd dist/extension && zip -r ../../magiceye-extension.zip .",
     "test:server": "node index.js --server",

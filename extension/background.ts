@@ -150,16 +150,45 @@ chrome.runtime.onMessage.addListener((request: ScreenshotRequest | { type: 'chec
 
 async function handleScreenshotRequest(request: ScreenshotRequest): Promise<ScreenshotResponse> {
   try {
-    const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    let targetTab;
     
-    if (!activeTab || !activeTab.id) {
-      return { success: false, error: 'No active tab found' };
+    // If URL is provided, find and switch to that tab
+    if (request.url) {
+      // Find all tabs that match the URL (could be partial match)
+      const allTabs = await chrome.tabs.query({});
+      const matchingTabs = allTabs.filter(tab => 
+        tab.url && (
+          tab.url === request.url || 
+          tab.url.startsWith(request.url) ||
+          // Handle localhost with different ports
+          (request.url.includes('localhost') && tab.url?.includes(request.url.split('?')[0]))
+        )
+      );
+      
+      if (matchingTabs.length > 0) {
+        targetTab = matchingTabs[0];
+        // Make this tab active
+        await chrome.tabs.update(targetTab.id!, { active: true });
+        await chrome.windows.update(targetTab.windowId!, { focused: true });
+        // Small delay to ensure tab is fully focused
+        await new Promise(resolve => setTimeout(resolve, 100));
+      } else {
+        return { success: false, error: `No tab found with URL: ${request.url}` };
+      }
+    } else {
+      // Use the currently active tab
+      const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      targetTab = activeTab;
+    }
+    
+    if (!targetTab || !targetTab.id) {
+      return { success: false, error: 'No target tab found' };
     }
 
     switch (request.type) {
       case 'capture_viewport': {
         const screenshot = await chrome.tabs.captureVisibleTab(
-          activeTab.windowId,
+          targetTab.windowId,
           { format: request.format || 'png' }
         );
         // Remove data URL prefix to get pure base64
@@ -170,7 +199,7 @@ async function handleScreenshotRequest(request: ScreenshotRequest): Promise<Scre
       case 'capture_full_page': {
         // For now, capture viewport as full page requires more complex implementation
         const screenshot = await chrome.tabs.captureVisibleTab(
-          activeTab.windowId,
+          targetTab.windowId,
           { format: request.format || 'png' }
         );
         const base64Data = screenshot.replace(/^data:image\/[a-z]+;base64,/, '');
@@ -180,7 +209,7 @@ async function handleScreenshotRequest(request: ScreenshotRequest): Promise<Scre
       case 'capture_element': {
         // Inject script to capture specific element
         const results = await chrome.scripting.executeScript({
-          target: { tabId: activeTab.id },
+          target: { tabId: targetTab.id },
           func: captureElement,
           args: [request.selector || 'body', request.index || 0, request.padding || 0]
         });
@@ -190,7 +219,7 @@ async function handleScreenshotRequest(request: ScreenshotRequest): Promise<Scre
           
           // Capture the visible area
           const screenshot = await chrome.tabs.captureVisibleTab(
-            activeTab.windowId,
+            targetTab.windowId,
             { format: request.format || 'png' }
           );
           
@@ -211,7 +240,7 @@ async function handleScreenshotRequest(request: ScreenshotRequest): Promise<Scre
       
       case 'get_page_info': {
         const results = await chrome.scripting.executeScript({
-          target: { tabId: activeTab.id },
+          target: { tabId: targetTab.id },
           func: getPageInfo
         });
         
@@ -223,7 +252,7 @@ async function handleScreenshotRequest(request: ScreenshotRequest): Promise<Scre
       
       case 'get_page_source': {
         const results = await chrome.scripting.executeScript({
-          target: { tabId: activeTab.id },
+          target: { tabId: targetTab.id },
           func: getPageSource
         });
         
@@ -235,7 +264,7 @@ async function handleScreenshotRequest(request: ScreenshotRequest): Promise<Scre
       
       case 'get_element_source': {
         const results = await chrome.scripting.executeScript({
-          target: { tabId: activeTab.id },
+          target: { tabId: targetTab.id },
           func: getElementSource,
           args: [request.selector || 'body', request.index || 0]
         });

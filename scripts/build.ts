@@ -3,6 +3,7 @@ import { copyFileSync, mkdirSync } from 'fs';
 
 const args = process.argv.slice(2);
 const watch = args.includes('--watch');
+const target = args.find(arg => arg.startsWith('--target='))?.split('=')[1] || 'all';
 
 async function buildExtension() {
   console.log('Building Chrome extension...');
@@ -15,12 +16,6 @@ async function buildExtension() {
     platform: 'browser' as const,
     target: 'chrome100',
     sourcemap: true,
-    watch: watch ? {
-      onRebuild(error, result) {
-        if (error) console.error('Watch build failed:', error);
-        else console.log('Extension rebuilt');
-      }
-    } : false,
   };
   
   // Build background script
@@ -69,5 +64,55 @@ async function buildExtension() {
   }
 }
 
-// Run build
-buildExtension().catch(console.error);
+async function buildMCPServer() {
+  console.log('Building MCP server...');
+  
+  // Ensure dist directory exists
+  mkdirSync('dist', { recursive: true });
+  
+  // Build the TypeScript MCP server to JavaScript
+  await esbuild.build({
+    entryPoints: ['mcp-server/index.ts'],
+    bundle: true,
+    platform: 'node',
+    target: 'node18',
+    format: 'esm',
+    outfile: 'dist/mcp-server.js',
+    external: ['@modelcontextprotocol/sdk', 'ws'],
+    sourcemap: true,
+  });
+  
+  // Also build the bridge module
+  await esbuild.build({
+    entryPoints: ['mcp-server/bridge.ts'],
+    bundle: true,
+    platform: 'node',
+    target: 'node18',
+    format: 'esm',
+    outfile: 'dist/bridge.js',
+    external: ['ws'],
+    sourcemap: true,
+  });
+  
+  console.log('MCP server build complete!');
+}
+
+// Run builds based on target
+async function build() {
+  try {
+    if (target === 'extension') {
+      await buildExtension();
+    } else if (target === 'server') {
+      await buildMCPServer();
+    } else {
+      // Build both
+      await buildExtension();
+      await buildMCPServer();
+    }
+  } catch (error) {
+    console.error('Build failed:', error);
+    process.exit(1);
+  }
+}
+
+build();
