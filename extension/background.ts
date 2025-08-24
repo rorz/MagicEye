@@ -50,7 +50,7 @@ function connectToMCPServer() {
 }
 
 chrome.runtime.onInstalled.addListener(() => {
-  console.log('Claude Code Vision extension installed');
+  console.log('MagicEye extension installed');
   connectToMCPServer();
 });
 

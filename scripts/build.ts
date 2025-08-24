@@ -1,11 +1,8 @@
 import * as esbuild from 'esbuild';
-import { copyFileSync, mkdirSync, existsSync } from 'fs';
-import { join } from 'path';
+import { copyFileSync, mkdirSync } from 'fs';
 
 const args = process.argv.slice(2);
 const watch = args.includes('--watch');
-const target = args.includes('--target=extension') ? 'extension' : 
-               args.includes('--target=server') ? 'server' : 'all';
 
 async function buildExtension() {
   console.log('Building Chrome extension...');
@@ -13,105 +10,64 @@ async function buildExtension() {
   // Ensure dist directories exist
   mkdirSync('dist/extension', { recursive: true });
   
+  const buildOptions = {
+    bundle: true,
+    platform: 'browser' as const,
+    target: 'chrome100',
+    sourcemap: true,
+    watch: watch ? {
+      onRebuild(error, result) {
+        if (error) console.error('Watch build failed:', error);
+        else console.log('Extension rebuilt');
+      }
+    } : false,
+  };
+  
   // Build background script
   await esbuild.build({
+    ...buildOptions,
     entryPoints: ['extension/background.ts'],
-    bundle: true,
     outfile: 'dist/extension/background.js',
-    platform: 'browser',
-    target: 'chrome100',
     format: 'esm',
-    sourcemap: true,
   });
   
   // Build content script
   await esbuild.build({
+    ...buildOptions,
     entryPoints: ['extension/content.ts'],
-    bundle: true,
     outfile: 'dist/extension/content.js',
-    platform: 'browser',
-    target: 'chrome100',
     format: 'iife',
-    sourcemap: true,
   });
 
   // Build monitor script
   await esbuild.build({
+    ...buildOptions,
     entryPoints: ['extension/monitor.ts'],
-    bundle: true,
     outfile: 'dist/extension/monitor.js',
-    platform: 'browser',
-    target: 'chrome100',
     format: 'iife',
-    sourcemap: true,
   });
   
   // Build popup script
   await esbuild.build({
+    ...buildOptions,
     entryPoints: ['extension/popup.ts'],
-    bundle: true,
     outfile: 'dist/extension/popup.js',
-    platform: 'browser',
-    target: 'chrome100',
     format: 'iife',
-    sourcemap: true,
   });
   
   // Copy static files
   copyFileSync('extension/manifest.json', 'dist/extension/manifest.json');
   copyFileSync('extension/popup.html', 'dist/extension/popup.html');
-  
-  // Copy icon files
-  const iconSizes = ['16', '48', '128'];
-  for (const size of iconSizes) {
-    const iconPath = `extension/icon-${size}.png`;
-    const distIconPath = `dist/extension/icon-${size}.png`;
-    if (existsSync(iconPath)) {
-      copyFileSync(iconPath, distIconPath);
-    } else {
-      console.warn(`Warning: ${iconPath} not found. Run 'pnpm run generate-icons' to create icons.`);
-    }
-  }
+  copyFileSync('extension/icon-16.png', 'dist/extension/icon-16.png');
+  copyFileSync('extension/icon-48.png', 'dist/extension/icon-48.png');
+  copyFileSync('extension/icon-128.png', 'dist/extension/icon-128.png');
   
   console.log('Extension build complete!');
-}
-
-async function buildServer() {
-  console.log('Building MCP server...');
   
-  mkdirSync('dist/server', { recursive: true });
-  
-  await esbuild.build({
-    entryPoints: ['mcp-server/index.ts'],
-    bundle: true,
-    outfile: 'dist/server/index.js',
-    platform: 'node',
-    target: 'node18',
-    format: 'esm',
-    sourcemap: true,
-    external: ['@modelcontextprotocol/sdk', 'ws'],
-  });
-  
-  console.log('Server build complete!');
-}
-
-async function build() {
-  try {
-    if (target === 'extension' || target === 'all') {
-      await buildExtension();
-    }
-    
-    if (target === 'server' || target === 'all') {
-      await buildServer();
-    }
-    
-    if (watch) {
-      console.log('Watching for changes...');
-    }
-  } catch (error) {
-    console.error('Build failed:', error);
-    process.exit(1);
+  if (watch) {
+    console.log('Watching for changes...');
   }
 }
 
-build();
+// Run build
+buildExtension().catch(console.error);

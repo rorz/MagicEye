@@ -10,7 +10,7 @@ import { connectToExtension, sendScreenshotRequest } from './bridge.js';
 
 const server = new Server(
   {
-    name: 'claude-code-vision',
+    name: 'magiceye',
     version: '0.1.0',
   },
   {
@@ -312,7 +312,7 @@ async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
   
-  console.error('Claude Code Vision MCP server running');
+  console.error('MagicEye MCP server running');
 }
 
 main().catch((error) => {

@@ -2,54 +2,113 @@
 
 ## Store Details
 
-**Name:** Claude Code Vision
+**Name:** MagicEye
 
 **Short Description (132 chars max):**
-Capture screenshots directly in Claude Code. Provides visual context for debugging UI issues and understanding layouts.
+Give your code assistant eyes. Capture screenshots and provide visual context for AI coding assistants like Claude Code.
 
 **Detailed Description:**
-Claude Code Vision bridges the gap between visual and code contexts in your Claude Code sessions. 
+MagicEye bridges the visual gap between your browser and AI coding assistants. Stop describing UI issues - show them directly.
 
-With a single click, capture screenshots of any webpage or application and instantly share them with Claude Code through the MCP (Model Context Protocol) server.
+With a single click, capture any part of any webpage and instantly share it with your AI assistant. Works seamlessly with Claude Code today, with more assistants coming soon.
 
 Perfect for:
 • Debugging UI issues with visual context
-• Explaining layout problems
-• Sharing design implementations
-• Documenting visual bugs
-• Getting help with CSS/styling issues
+• Explaining layout problems without words
+• Sharing design implementations instantly
+• Documenting visual bugs with proof
+• Getting CSS help by showing, not telling
+• Understanding complex interfaces at a glance
+• Reviewing responsive designs across breakpoints
 
 Features:
 • One-click screenshot capture
-• Automatic image optimization
-• Seamless Claude Code integration
-• Works with any webpage or application
-• Privacy-focused: images stay local
+• Full page, viewport, and element capture modes
+• Zero configuration setup - just run npx magiceye
+• Direct WebSocket connection to your AI assistant
+• Works with any webpage or web application
+• Privacy-focused: all data stays local
+• Auto-capture mode for monitoring changes
+• Lightweight and fast
 
-## Installation Instructions for Users
+How it works:
+1. Install MagicEye from Chrome Web Store
+2. Run `npx magiceye` in your terminal (30-second setup)
+3. Click the extension icon to capture
+4. Your AI assistant can now see what you see
 
-After installing from Chrome Web Store:
+Currently supports:
+• Claude Code (full MCP integration)
 
-1. Run in terminal:
+Coming soon:
+• Cursor
+• Codex
+• GitHub Copilot
+• VS Code
+
+No subscription. No cloud storage. No tracking. Just a direct bridge between your browser and your AI coding assistant.
+
+## Installation Instructions (for Store listing)
+
+After installing:
+
+1. Run setup command:
    ```
-   npm install -g claude-code-vision
+   npx magiceye
    ```
 
 2. Restart Claude Code
 
-3. Click the extension icon and test screenshot capture!
+3. Click the MagicEye icon and start capturing!
 
-## Publishing Steps
+The setup takes 30 seconds and works across all your projects.
 
-1. Create a developer account at https://chrome.google.com/webstore/devconsole
-2. Pay one-time $5 developer fee
-3. Create ZIP of dist/extension folder
-4. Upload to Chrome Web Store
-5. Add screenshots (1280x800 or 640x400)
-6. Submit for review
+## Categories
+- Developer Tools
+- Productivity
 
-## Assets Needed
-- Icon 128x128 (already have)
-- Screenshots (need 1-5)
+## Why MagicEye?
+
+Stop wasting time describing what's wrong with your UI. Stop taking screenshots, saving them, uploading them. Stop the friction.
+
+MagicEye creates a direct visual bridge between your browser and your AI assistant. One click, instant context, problem solved.
+
+Built for developers who value their time.
+
+## Privacy Policy Points
+- No data collection
+- No external servers
+- All communication is local (localhost only)
+- No analytics or tracking
+- Screenshots never leave your machine
+
+## Support
+- GitHub: https://github.com/YOUR_USERNAME/magiceye
+- Issues: https://github.com/YOUR_USERNAME/magiceye/issues
+
+## Publishing Checklist
+
+### Before Submission
+- [ ] Test extension with fresh install
+- [ ] Verify manifest.json version number
+- [ ] Update all GitHub links
+- [ ] Create promotional screenshots
+- [ ] Test npx command works from npm
+
+### Assets Needed
+- Icon 128x128 ✅ (already have)
+- Screenshots 1280x800 or 640x400 (need 1-5):
+  1. Extension in action with Claude Code
+  2. The popup interface
+  3. Before/after showing a UI fix
+  4. The simple setup flow
+  5. Multiple capture modes
 - Promotional tile 440x280 (optional)
 - Small promotional tile 220x140 (optional)
+
+### Submission Settings
+- Visibility: Public
+- Pricing: Free
+- Regions: All regions
+- Language: English
+- Content rating: Everyone

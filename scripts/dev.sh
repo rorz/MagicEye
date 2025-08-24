@@ -1,29 +1,35 @@
 #!/bin/bash
 
-# Quick development helper
-echo "🔄 Starting development mode..."
+# Development helper for MagicEye
+echo "🔄 Starting MagicEye development mode..."
 echo ""
 echo "This will:"
-echo "• Watch and rebuild on changes"
-echo "• Show server logs"
-echo "• Auto-reload extension (manually refresh in Chrome)"
+echo "• Watch and rebuild extension on changes"
+echo "• Start the MCP server for testing"
 echo ""
 
-# Start build in watch mode
-pnpm run build -- --watch &
+# Start extension build in watch mode
+echo "👁️  Building extension in watch mode..."
+pnpm run dev:extension &
 BUILD_PID=$!
 
-# Start the server for testing
-echo "Starting MCP server for testing..."
-node dist/server/index.js &
+# Give build a moment to complete initial build
+sleep 2
+
+# Start the MCP server for testing
+echo "🚀 Starting MCP server..."
+node index.js --server &
 SERVER_PID=$!
 
+echo ""
 echo "✅ Development mode active!"
 echo ""
 echo "Tips:"
-echo "• Refresh extension in Chrome after changes"
-echo "• Check console in Chrome DevTools for debugging"
-echo "• Press Ctrl+C to stop"
+echo "• Extension files: dist/extension/"
+echo "• Reload extension in Chrome after changes"
+echo "• Check Chrome DevTools console for debugging"
+echo "• MCP server running on stdio"
+echo "• Press Ctrl+C to stop everything"
 echo ""
 
 # Cleanup on exit

@@ -1,123 +1,155 @@
-# Claude Code Vision 👁️
+# MagicEye
 
-**Seamlessly share screenshots with Claude Desktop through a Chrome extension.**
+**Give your code assistant eyes.**
 
-## 🚀 Quick Start (2 minutes)
+Capture screenshots directly in your browser and share them instantly with AI coding assistants. Zero friction visual context.
+
+## ✨ Install in 30 Seconds
 
 ```bash
-# Clone and setup everything automatically
-git clone https://github.com/yourusername/claude-code-vision.git
-cd claude-code-vision
-./setup.sh
+npx magiceye
 ```
 
-That's it! The script handles everything:
-- ✅ Installs dependencies
-- ✅ Builds the extension and server
-- ✅ Configures Claude Desktop
-- ✅ Opens Chrome to load the extension
+That's it. The setup wizard will:
+1. Guide you through Chrome extension installation
+2. Configure Claude automatically (user scope)
+3. Test the connection
 
 ## 🎯 How It Works
 
-1. **Take a screenshot** (Cmd+Shift+4 on Mac, Windows+Shift+S on Windows)
-2. **Open Claude Desktop** and mention the screenshot
-3. **The extension automatically captures and sends it** to Claude
+1. **Click** the MagicEye icon in Chrome
+2. **Capture** any webpage or element
+3. **Ask** Claude "What do you see?"
 
-No manual uploading. No file management. Just natural conversation.
+Claude now has eyes. No file management. No manual configuration. It just works.
 
-## 🛠️ Manual Setup
+## 🚀 Features
 
-<details>
-<summary>If you prefer manual setup or the script doesn't work...</summary>
+- **Instant Screenshots** - Capture viewport, full page, or specific elements
+- **Zero Config** - Uses `npx` so Claude always runs the latest version
+- **User Scope** - Works across all your projects automatically
+- **WebSocket Bridge** - Direct communication between browser and Claude
+- **Privacy First** - Everything runs locally, no external servers
 
-### Prerequisites
-- Node.js 18+
-- pnpm (`npm install -g pnpm`)
-- Chrome browser
-- Claude Desktop app
+## 📦 What's Included
 
-### Steps
+**Chrome Extension**
+- Captures screenshots from any webpage
+- WebSocket server for real-time communication
+- Pin it for quick access
 
-1. **Install and build**
+**MCP Server** 
+- Runs via `npx` (no installation needed)
+- Provides tools Claude can use:
+  - `capture_screenshot` - Take a screenshot
+  - `check_connection` - Verify extension is connected
+  - `get_last_screenshot` - Retrieve recent capture
+
+## 🛠️ Development
+
+### Building the Chrome Extension
+
 ```bash
+# Clone the repo
+git clone https://github.com/YOUR_USERNAME/magiceye.git
+cd magiceye
+
+# Install dependencies
 pnpm install
-pnpm run build
+
+# Build extension
+pnpm run build:extension
+
+# Extension will be in dist/extension/
 ```
 
-2. **Configure Claude Desktop**
-
-Add to `~/.config/claude-desktop/config.json`:
-```json
-{
-  "mcpServers": {
-    "vision-server": {
-      "command": "node",
-      "args": ["/absolute/path/to/claude-code-vision/dist/server/index.js"]
-    }
-  }
-}
-```
-
-3. **Load Chrome extension**
-- Open `chrome://extensions`
-- Enable "Developer mode"
-- Click "Load unpacked"
-- Select `dist/extension` folder
-
-4. **Restart Claude Desktop**
-
-</details>
-
-## 💻 Development
+### Testing Locally
 
 ```bash
-# Start development mode with auto-rebuild
-./scripts/dev.sh
+# Test the setup flow
+pnpm run test:setup
 
-# Or manually:
-pnpm run build -- --watch
+# Test the MCP server
+pnpm run test:server
+
+# Watch mode for development
+pnpm run dev:extension
+```
+
+### Package for Chrome Web Store
+
+```bash
+pnpm run package:extension
+# Creates magiceye-extension.zip
 ```
 
 ## 🏗️ Architecture
 
 ```
-┌─────────────┐     ┌──────────────┐     ┌──────────────┐
-│   Chrome    │────▶│ MCP Server   │────▶│   Claude     │
-│  Extension  │     │  (Node.js)   │     │   Desktop    │
-└─────────────┘     └──────────────┘     └──────────────┘
-     Captures          Processes            Receives
-   Screenshots          Images              Vision Data
+┌─────────────┐     WebSocket      ┌──────────────┐
+│   Chrome    │ ◄────────────────► │  MCP Server  │
+│  Extension  │     Port 9559      │   (npx)      │
+└─────────────┘                    └──────────────┘
+       ↓                                   ↑
+   Captures                            Claude runs
+  Screenshots                         on each start
 ```
 
-- **Chrome Extension**: Monitors clipboard for screenshots
-- **MCP Server**: Bridges extension and Claude Desktop
-- **WebSocket**: Real-time communication between components
+**The Magic:** Claude's config uses `npx -y magiceye --server`, so it always fetches and runs the latest version. No local installation needed.
 
-## 📝 Commands Reference
+## 🚀 Roadmap
 
-| Command | Description |
-|---------|-------------|
-| `pnpm install` | Install dependencies |
-| `pnpm run build` | Build extension and server |
-| `pnpm run build:extension` | Build Chrome extension only |
-| `pnpm run build:server` | Build MCP server only |
-| `./setup.sh` | Automated setup |
-| `./scripts/dev.sh` | Start development mode |
+### Now (v0.1)
+- ✅ Claude Code support via MCP
+- ✅ Chrome extension
+- ✅ Single npm package
+- ✅ Zero-config setup
 
-## 🤔 Troubleshooting
+### Next (v0.2)
+- 🔜 Cursor integration
+- 🔜 Element inspection mode
+- 🔜 Capture history
+- 🔜 Firefox support
 
-**Extension not working?**
-- Check Chrome DevTools console for errors
-- Ensure extension is enabled in `chrome://extensions`
+### Future (v1.0)
+- 📋 Codex support
+- 📋 GitHub Copilot integration
+- 📋 Video capture
+- 📋 Network request inspection
 
-**Claude not receiving images?**
-- Restart Claude Desktop after config changes
-- Check server is in config: `cat ~/.config/claude-desktop/config.json`
+## 🤝 Contributing
 
-**Build errors?**
-- Ensure Node.js 18+ and pnpm are installed
-- Try `pnpm install --force`
+Contributions welcome! Please check out the [issues](https://github.com/YOUR_USERNAME/magiceye/issues) page.
 
-## License
+## 🔧 Troubleshooting
 
-MIT
+### Extension not connecting?
+1. Make sure the extension is installed and pinned
+2. Check that port 9559 is not blocked
+3. Restart Claude Code after setup
+
+### MCP server not working?
+Run `npx magiceye` again to reconfigure. Make sure to use `--scope user` if using Claude CLI manually.
+
+### Manual Configuration
+If automatic setup fails, add this to `~/.config/claude/mcp-settings.json`:
+```json
+{
+  "mcpServers": {
+    "magiceye": {
+      "command": "npx",
+      "args": ["-y", "magiceye", "--server"]
+    }
+  }
+}
+```
+
+## 📝 License
+
+MIT © Rory
+
+---
+
+**Built for developers who show, don't tell.**
+
+Give your AI the context it needs. Stop describing, start showing.

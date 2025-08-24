@@ -1,4 +1,4 @@
-// Auto-capture monitor for Code Vision
+// Auto-capture monitor for MagicEye
 interface MonitorConfig {
   enabled: boolean;
   captureOnError: boolean;
@@ -52,7 +52,7 @@ class VisionMonitor {
   }
 
   private start() {
-    console.log('🎯 Code Vision Monitor: ACTIVATED');
+    console.log('🎯 MagicEye Monitor: ACTIVATED');
     
     // Monitor console errors
     if (this.config.captureOnError) {
@@ -84,7 +84,7 @@ class VisionMonitor {
   }
 
   private stop() {
-    console.log('🛑 Code Vision Monitor: DEACTIVATED');
+    console.log('🛑 MagicEye Monitor: DEACTIVATED');
     
     if (this.mutationObserver) {
       this.mutationObserver.disconnect();

@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Claude Code Vision",
+  "name": "MagicEye",
   "version": "0.1.0",
-  "description": "Provides visual context to Claude Code sessions via screenshots",
+  "description": "Give your code assistant eyes - visual context for AI coding assistants",
   "permissions": [
     "activeTab",
     "tabs",

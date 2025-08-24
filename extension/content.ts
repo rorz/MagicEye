@@ -1,4 +1,4 @@
-// Content script for Claude Code Vision
+// Content script for MagicEye
 // Handles in-page operations that require DOM access
 
 export async function captureFullPageScreenshot(): Promise<string | null> {

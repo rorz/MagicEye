@@ -1,27 +1,44 @@
 {
-  "name": "claude-code-vision",
+  "name": "magiceye",
   "version": "0.1.0",
-  "description": "Chrome extension + MCP server for providing visual context to Claude Code",
+  "description": "Give your code assistant eyes - Visual context for AI coding assistants",
   "type": "module",
+  "bin": {
+    "magiceye": "./index.js"
+  },
+  "files": [
+    "index.js",
+    "server.js",
+    "README.md"
+  ],
   "scripts": {
-    "build": "tsx scripts/build.ts",
     "build:extension": "tsx scripts/build.ts --target=extension",
-    "build:server": "tsx scripts/build.ts --target=server",
-    "dev": "tsx scripts/build.ts --watch",
-    "typecheck": "tsc --noEmit",
-    "clean": "rm -rf dist",
-    "generate-icons": "./scripts/generate-icons.sh",
-    "postinstall": "node scripts/postinstall.js",
-    "setup": "node scripts/postinstall.js"
+    "dev:extension": "tsx scripts/build.ts --target=extension --watch",
+    "package:extension": "cd dist/extension && zip -r ../../magiceye-extension.zip .",
+    "test:server": "node index.js --server",
+    "test:setup": "node index.js"
   },
   "keywords": [
     "mcp",
     "claude",
+    "claude-code",
+    "ai-assistant",
     "chrome-extension",
-    "screenshot"
+    "screenshot",
+    "visual-context",
+    "cursor",
+    "copilot"
   ],
   "author": "Rory",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/YOUR_USERNAME/magiceye.git"
+  },
+  "bugs": {
+    "url": "https://github.com/YOUR_USERNAME/magiceye/issues"
+  },
+  "homepage": "https://github.com/YOUR_USERNAME/magiceye#readme",
   "devDependencies": {
     "@types/chrome": "^0.0.254",
     "@types/node": "^20.11.0",
@@ -31,7 +48,9 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^0.6.0",
-    "@types/ws": "^8.18.1",
     "ws": "^8.18.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }

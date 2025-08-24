@@ -1,0 +1,22 @@
+# Development files
+extension/
+mcp-server/
+scripts/
+docs/
+shared/
+*.ts
+tsconfig.json
+pnpm-lock.yaml
+ADOPTION_STRATEGY.md
+CLAUDE.md
+
+# Build artifacts
+dist/
+*.zip
+
+# Git
+.git/
+.gitignore
+
+# Dev scripts
+*.sh
