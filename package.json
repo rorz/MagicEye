@@ -1,6 +1,6 @@
 {
   "name": "magiceyes",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Give your code assistant eyes - Visual context for AI coding assistants",
   "type": "module",
   "bin": {
