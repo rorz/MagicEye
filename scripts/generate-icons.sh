@@ -21,19 +21,36 @@ fi
 
 echo "Generating Chrome extension icons..."
 
-# Generate 16x16 icon
+# Generate enabled state icons from main-icon.png
+echo "Generating enabled state icons..."
 convert main-icon.png -resize 16x16 extension/icon-16.png
 echo "✓ Created extension/icon-16.png"
 
-# Generate 48x48 icon
 convert main-icon.png -resize 48x48 extension/icon-48.png
 echo "✓ Created extension/icon-48.png"
 
-# Generate 128x128 icon
 convert main-icon.png -resize 128x128 extension/icon-128.png
 echo "✓ Created extension/icon-128.png"
 
 convert main-icon.png -resize 256x256 docs/icon-256.png
 echo "✓ Created docs/icon-256.png"
+
+# Generate disabled state icons from main-icon-off.png (if it exists)
+if [ -f "main-icon-off.png" ]; then
+    echo "Generating disabled state icons..."
+    
+    convert main-icon-off.png -resize 16x16 extension/icon-16-off.png
+    echo "✓ Created extension/icon-16-off.png"
+    
+    convert main-icon-off.png -resize 48x48 extension/icon-48-off.png
+    echo "✓ Created extension/icon-48-off.png"
+    
+    convert main-icon-off.png -resize 128x128 extension/icon-128-off.png
+    echo "✓ Created extension/icon-128-off.png"
+    
+    echo "Disabled state icons generated successfully!"
+else
+    echo "Note: main-icon-off.png not found, skipping disabled state icons"
+fi
 
 echo "All icons generated successfully!"

@@ -200,18 +200,62 @@ function connectToMCPServer() {
 
 chrome.runtime.onInstalled.addListener(() => {
   keepServiceWorkerAlive(); // Start keep-alive immediately
-  connectToMCPServer();
+  chrome.storage.local.get('extensionEnabled', (result) => {
+    extensionEnabled = result.extensionEnabled !== false; // Default to enabled
+    
+    // Set icon based on state
+    if (extensionEnabled) {
+      chrome.action.setIcon({
+        path: {
+          "16": "icon-16.png",
+          "48": "icon-48.png",
+          "128": "icon-128.png"
+        }
+      });
+      connectToMCPServer();
+    } else {
+      chrome.action.setIcon({
+        path: {
+          "16": "icon-16-off.png",
+          "48": "icon-48-off.png",
+          "128": "icon-128-off.png"
+        }
+      });
+    }
+  });
 });
 
 chrome.runtime.onStartup.addListener(() => {
   keepServiceWorkerAlive(); // Start keep-alive immediately
-  connectToMCPServer();
+  chrome.storage.local.get('extensionEnabled', (result) => {
+    extensionEnabled = result.extensionEnabled !== false; // Default to enabled
+    
+    // Set icon based on state
+    if (extensionEnabled) {
+      chrome.action.setIcon({
+        path: {
+          "16": "icon-16.png",
+          "48": "icon-48.png",
+          "128": "icon-128.png"
+        }
+      });
+      connectToMCPServer();
+    } else {
+      chrome.action.setIcon({
+        path: {
+          "16": "icon-16-off.png",
+          "48": "icon-48-off.png",
+          "128": "icon-128-off.png"
+        }
+      });
+    }
+  });
 });
 
-// Auto-capture is disabled to prevent debugger attachment on page loads
-let autoCaptureEnabled = false;
+// Extension enabled state
+let extensionEnabled = true;
 
-chrome.runtime.onMessage.addListener((request: ScreenshotRequest | { type: 'check_connection' | 'reconnect' | 'AUTO_CAPTURE' | 'GET_CAPTURE_HISTORY' | 'TOGGLE_AUTO_CAPTURE' }, sender, sendResponse) => {
+chrome.runtime.onMessage.addListener((request: ScreenshotRequest | { type: 'check_connection' | 'reconnect' | 'TOGGLE_EXTENSION' | 'GET_EXTENSION_STATUS' }, sender, sendResponse) => {
   if (request.type === 'check_connection') {
     sendResponse({ connected: isConnected });
     return false;
@@ -238,20 +282,43 @@ chrome.runtime.onMessage.addListener((request: ScreenshotRequest | { type: 'chec
     return false;
   }
 
-  if (request.type === 'AUTO_CAPTURE') {
-    // Auto-capture is disabled - we don't want to attach debugger on page reloads
-    sendResponse({ success: false, reason: 'Auto-capture disabled' });
+  if (request.type === 'TOGGLE_EXTENSION') {
+    extensionEnabled = !extensionEnabled;
+    chrome.storage.local.set({ extensionEnabled });
+    
+    // Update extension icon based on state
+    if (extensionEnabled) {
+      chrome.action.setIcon({
+        path: {
+          "16": "icon-16.png",
+          "48": "icon-48.png",
+          "128": "icon-128.png"
+        }
+      });
+    } else {
+      chrome.action.setIcon({
+        path: {
+          "16": "icon-16-off.png",
+          "48": "icon-48-off.png",
+          "128": "icon-128-off.png"
+        }
+      });
+    }
+    
+    if (!extensionEnabled && ws) {
+      // Disconnect from MCP server when disabled
+      ws.close();
+    } else if (extensionEnabled && !ws) {
+      // Reconnect when enabled
+      connectToMCPServer();
+    }
+    
+    sendResponse({ enabled: extensionEnabled });
     return false;
   }
 
-  if (request.type === 'GET_CAPTURE_HISTORY') {
-    sendResponse({ history: [] }); // No capture history since auto-capture is disabled
-    return false;
-  }
-
-  if (request.type === 'TOGGLE_AUTO_CAPTURE') {
-    // Auto-capture is permanently disabled
-    sendResponse({ enabled: false });
+  if (request.type === 'GET_EXTENSION_STATUS') {
+    sendResponse({ enabled: extensionEnabled });
     return false;
   }
   
@@ -490,6 +557,28 @@ function getPageSource() {
   return document.documentElement.outerHTML;
 }
 
-// Try to connect immediately when the background script loads
+// Try to connect immediately when the background script loads (if enabled)
 keepServiceWorkerAlive(); // Start keep-alive immediately on script load
-connectToMCPServer();
+chrome.storage.local.get('extensionEnabled', (result) => {
+  extensionEnabled = result.extensionEnabled !== false; // Default to enabled
+  
+  // Set icon based on state
+  if (extensionEnabled) {
+    chrome.action.setIcon({
+      path: {
+        "16": "icon-16.png",
+        "48": "icon-48.png",
+        "128": "icon-128.png"
+      }
+    });
+    connectToMCPServer();
+  } else {
+    chrome.action.setIcon({
+      path: {
+        "16": "icon-16-off.png",
+        "48": "icon-48-off.png",
+        "128": "icon-128-off.png"
+      }
+    });
+  }
+});

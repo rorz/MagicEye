@@ -24,8 +24,7 @@
         "<all_urls>"
       ],
       "js": [
-        "content.js",
-        "monitor.js"
+        "content.js"
       ],
       "run_at": "document_start"
     }

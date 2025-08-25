@@ -33,14 +33,6 @@ async function buildExtension() {
     outfile: 'dist/extension/content.js',
     format: 'iife',
   });
-
-  // Build monitor script
-  await esbuild.build({
-    ...buildOptions,
-    entryPoints: ['extension/monitor.ts'],
-    outfile: 'dist/extension/monitor.js',
-    format: 'iife',
-  });
   
   // Build popup script
   await esbuild.build({
@@ -56,6 +48,15 @@ async function buildExtension() {
   copyFileSync('extension/icon-16.png', 'dist/extension/icon-16.png');
   copyFileSync('extension/icon-48.png', 'dist/extension/icon-48.png');
   copyFileSync('extension/icon-128.png', 'dist/extension/icon-128.png');
+  
+  // Copy disabled state icons if they exist
+  try {
+    copyFileSync('extension/icon-16-off.png', 'dist/extension/icon-16-off.png');
+    copyFileSync('extension/icon-48-off.png', 'dist/extension/icon-48-off.png');
+    copyFileSync('extension/icon-128-off.png', 'dist/extension/icon-128-off.png');
+  } catch (e) {
+    // Disabled icons are optional
+  }
   
   console.log('Extension build complete!');
   

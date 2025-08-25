@@ -46,13 +46,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Load saved state (default to ON for auto-mode)
-  chrome.storage.local.get('autoCaptureEnabled', (result) => {
+  // Load saved state (default to ON)
+  chrome.storage.local.get('extensionEnabled', (result) => {
     // Add no-transition class to prevent animation on load
     slider.classList.add('no-transition');
     
     // Default to true if not set
-    const enabled = result.autoCaptureEnabled !== false;
+    const enabled = result.extensionEnabled !== false;
     powerToggle.checked = enabled;
     updateToggleState(enabled);
     
@@ -63,13 +63,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 50);
     
     // If first time, save the default
-    if (result.autoCaptureEnabled === undefined) {
-      chrome.storage.local.set({ autoCaptureEnabled: true });
-      // Enable auto-capture by default
-      chrome.runtime.sendMessage({ 
-        type: 'TOGGLE_AUTO_CAPTURE',
-        enabled: true 
-      });
+    if (result.extensionEnabled === undefined) {
+      chrome.storage.local.set({ extensionEnabled: true });
     }
   });
 
@@ -78,15 +73,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const enabled = powerToggle.checked;
     
     // Save state
-    chrome.storage.local.set({ autoCaptureEnabled: enabled });
+    chrome.storage.local.set({ extensionEnabled: enabled });
     
     // Update UI immediately
     updateToggleState(enabled);
     
-    // Send message to background
+    // Send message to background to toggle extension
     const response = await chrome.runtime.sendMessage({ 
-      type: 'TOGGLE_AUTO_CAPTURE',
-      enabled: enabled
+      type: 'TOGGLE_EXTENSION'
     });
     
     // Update connection status
@@ -98,7 +92,7 @@ document.addEventListener('DOMContentLoaded', () => {
       modeLabel.textContent = 'ON';
       logoIcon.classList.remove('eye-closed');
       if (isConnected) {
-        statusText.innerHTML = 'Monitoring page activity';
+        statusText.innerHTML = 'Ready to capture';
         statusText.className = 'status-text active';
       } else {
         statusText.textContent = 'Waiting for MCP server';
