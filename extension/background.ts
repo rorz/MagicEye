@@ -122,6 +122,14 @@ function connectToMCPServer() {
         // Handle screenshot request from MCP server
         if (request.id && request.type) {
           const response = await handleScreenshotRequest(request);
+          console.log('Extension sending response:', {
+            id: request.id,
+            success: response.success,
+            hasData: !!response.data,
+            hasScreenshot: !!response.data?.screenshot,
+            screenshotSize: response.data?.screenshot?.length,
+            error: response.error
+          });
           // Send response back with the same ID
           if (ws && ws.readyState === WebSocket.OPEN) {
             ws.send(JSON.stringify({ id: request.id, ...response }));
@@ -315,14 +323,25 @@ async function handleScreenshotRequest(request: ScreenshotRequest): Promise<Scre
     if (request.url) {
       // Find all tabs that match the URL (could be partial match)
       const allTabs = await chrome.tabs.query({});
-      const matchingTabs = allTabs.filter(tab => 
-        tab.url && (
-          tab.url === request.url || 
-          tab.url.startsWith(request.url) ||
-          // Handle localhost with different ports
-          (request.url.includes('localhost') && tab.url?.includes(request.url.split('?')[0]))
-        )
-      );
+      const matchingTabs = allTabs.filter(tab => {
+        if (!tab.url) return false;
+        
+        // Exact match
+        if (tab.url === request.url) return true;
+        
+        // Tab URL starts with requested URL
+        if (tab.url.startsWith(request.url)) return true;
+        
+        // Requested URL is a base domain, match any path on that domain
+        // e.g., "https://github.com" matches "https://github.com/user/repo"
+        const requestedBase = request.url.replace(/\/$/, ''); // Remove trailing slash
+        if (tab.url.startsWith(requestedBase + '/') || tab.url === requestedBase) return true;
+        
+        // Handle localhost with different ports
+        if (request.url.includes('localhost') && tab.url.includes(request.url.split('?')[0])) return true;
+        
+        return false;
+      });
       
       if (matchingTabs.length > 0) {
         targetTab = matchingTabs[0];
@@ -336,6 +355,20 @@ async function handleScreenshotRequest(request: ScreenshotRequest): Promise<Scre
       targetTab = activeTab;
     }
     
+    // Handle requests that don't need a target tab
+    if (request.type === 'get_all_tabs') {
+      const allTabs = await chrome.tabs.query({});
+      const tabInfo = allTabs.map(tab => ({
+        id: tab.id,
+        url: tab.url,
+        title: tab.title,
+        active: tab.active,
+        windowId: tab.windowId
+      }));
+      return { success: true, data: { tabs: tabInfo } };
+    }
+    
+    // For other requests, we need a target tab
     if (!targetTab || !targetTab.id) {
       return { success: false, error: 'No target tab found' };
     }
@@ -344,6 +377,13 @@ async function handleScreenshotRequest(request: ScreenshotRequest): Promise<Scre
       case 'capture_viewport': {
         // Try to capture using debugger API for any tab (visible or not)
         try {
+          // Detach any existing debugger first
+          try {
+            await chrome.debugger.detach({ tabId: targetTab.id });
+          } catch (e) {
+            // Ignore if not attached
+          }
+          
           // Attach debugger to the tab
           await chrome.debugger.attach({ tabId: targetTab.id }, '1.3');
           
@@ -357,9 +397,18 @@ async function handleScreenshotRequest(request: ScreenshotRequest): Promise<Scre
           // Detach debugger
           await chrome.debugger.detach({ tabId: targetTab.id });
           
-          return { success: true, data: { screenshot: (result as any).data } };
+          // Extract only the screenshot data, nothing else that could have circular refs
+          const screenshotData = (result as any).data;
+          if (typeof screenshotData !== 'string') {
+            throw new Error('Invalid screenshot data received');
+          }
+          
+          // Check size and log it
+          console.log(`Screenshot size: ${screenshotData.length} chars (${Math.round(screenshotData.length / 1024)}KB)`);
+          
+          return { success: true, data: { screenshot: screenshotData } };
         } catch (debuggerError) {
-          // Fallback to visible tab capture
+          console.error('Debugger capture failed:', debuggerError);
           
           // Fallback to regular capture if debugger fails (e.g., on chrome:// pages)
           try {
@@ -370,7 +419,8 @@ async function handleScreenshotRequest(request: ScreenshotRequest): Promise<Scre
             const base64Data = screenshot.replace(/^data:image\/[a-z]+;base64,/, '');
             return { success: true, data: { screenshot: base64Data } };
           } catch (fallbackError) {
-            return { success: false, error: 'Failed to capture screenshot' };
+            console.error('Fallback capture also failed:', fallbackError);
+            return { success: false, error: `Failed to capture screenshot: ${fallbackError.message || 'Unknown error'}` };
           }
         }
       }

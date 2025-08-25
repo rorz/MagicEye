@@ -251,6 +251,14 @@ const tools: Tool[] = [
       },
       required: ['selector']
     }
+  },
+  {
+    name: 'get_all_tabs',
+    description: 'Get a list of all open browser tabs with their URLs and titles',
+    inputSchema: {
+      type: 'object',
+      properties: {}
+    }
   }
 ];
 
@@ -418,6 +426,25 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           };
         } else {
           throw new Error(response.error || 'Failed to get element source');
+        }
+      }
+      
+      case 'get_all_tabs': {
+        const response = await sendScreenshotRequest({
+          type: 'get_all_tabs'
+        });
+        
+        if (response.success && response.data?.tabs) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify(response.data.tabs, null, 2)
+              }
+            ]
+          };
+        } else {
+          throw new Error(response.error || 'Failed to get tabs list');
         }
       }
       

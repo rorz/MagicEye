@@ -1,5 +1,22 @@
 # Project Instructions
 
+## 🚨 CRITICAL: Extension/Server Updates
+
+**WHENEVER you make changes that require:**
+- Rebuilding the extension (`pnpm run build`)
+- Reloading the Chrome extension 
+- Restarting the MCP server
+
+**YOU MUST:**
+1. Clearly tell the user what needs to be done
+2. WAIT for the user to confirm they've done it
+3. Do NOT proceed with testing until confirmed
+
+Example: "I've made changes to the extension. Please:
+1. Run `pnpm run build`
+2. Reload the extension in Chrome (chrome://extensions)
+3. Let me know when done"
+
 ## 🎯 SUPREME DIRECTIVE: ELITE DX/UX
 
 **Every single line of code, every decision, every feature MUST be evaluated through the lens of Developer & User Experience excellence.**

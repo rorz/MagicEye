@@ -33,4 +33,7 @@ echo "✓ Created extension/icon-48.png"
 convert main-icon.png -resize 128x128 extension/icon-128.png
 echo "✓ Created extension/icon-128.png"
 
+convert main-icon.png -resize 256x256 docs/icon-256.png
+echo "✓ Created docs/icon-256.png"
+
 echo "All icons generated successfully!"
