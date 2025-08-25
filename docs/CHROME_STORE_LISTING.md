@@ -32,6 +32,7 @@ Features:
 • Lightweight and fast
 
 How it works:
+
 1. Install MagicEyes from Chrome Web Store
 2. Run `npx magiceyes` in your terminal (30-second setup)
 3. Click the extension icon to capture
@@ -53,6 +54,7 @@ No subscription. No cloud storage. No tracking. Just a direct bridge between you
 After installing:
 
 1. Run setup command:
+
    ```
    npx magiceyes
    ```
@@ -64,6 +66,7 @@ After installing:
 The setup takes 30 seconds and works across all your projects.
 
 ## Categories
+
 - Developer Tools
 - Productivity
 
@@ -76,6 +79,7 @@ MagicEyes creates a direct visual bridge between your browser and your AI assist
 Built for developers who value their time.
 
 ## Privacy Policy Points
+
 - No data collection
 - No external servers
 - All communication is local (localhost only)
@@ -83,12 +87,14 @@ Built for developers who value their time.
 - Screenshots never leave your machine
 
 ## Support
+
 - GitHub: https://github.com/rorz/magiceyes
 - Issues: https://github.com/rorz/magiceyes/issues
 
 ## Publishing Checklist
 
 ### Before Submission
+
 - [ ] Test extension with fresh install
 - [ ] Verify manifest.json version number
 - [ ] Update all GitHub links
@@ -96,6 +102,7 @@ Built for developers who value their time.
 - [ ] Test npx command works from npm
 
 ### Assets Needed
+
 - Icon 128x128 ✅ (already have)
 - Screenshots 1280x800 or 640x400 (need 1-5):
   1. Extension in action with Claude Code
@@ -107,6 +114,7 @@ Built for developers who value their time.
 - Small promotional tile 220x140 (optional)
 
 ### Submission Settings
+
 - Visibility: Public
 - Pricing: Free
 - Regions: All regions

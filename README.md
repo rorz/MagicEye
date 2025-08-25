@@ -19,6 +19,7 @@ npx magiceyes
 ```
 
 The setup wizard:
+
 1. Configures Claude automatically
 2. Opens Chrome extension install
 3. Tests the connection

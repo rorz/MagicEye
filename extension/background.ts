@@ -1,8 +1,7 @@
-import type { ScreenshotRequest, ScreenshotResponse } from '../shared/types';
+import type { ScreenshotRequest, ScreenshotResponse } from "../shared/types";
 
 let ws: WebSocket | null = null;
 let isConnected = false;
-const messageQueue: Map<string, (response: ScreenshotResponse) => void> = new Map();
 let reconnectDelay = 500; // Start with 500ms for faster initial connection
 let reconnectTimer: number | null = null;
 let pingInterval: number | null = null;
@@ -14,16 +13,15 @@ function keepServiceWorkerAlive() {
   if (keepAliveInterval) {
     clearInterval(keepAliveInterval);
   }
-  
+
   // Ping the service worker every 20 seconds to prevent it from being suspended
   keepAliveInterval = setInterval(() => {
     // Simply accessing chrome API keeps the worker alive
-    chrome.storage.local.get('keepAlive', () => {
+    chrome.storage.local.get("keepAlive", () => {
       // Keep-alive ping
     });
   }, 20000) as unknown as number;
 }
-
 
 function connectToMCPServer() {
   try {
@@ -32,105 +30,124 @@ function connectToMCPServer() {
       clearTimeout(reconnectTimer);
       reconnectTimer = null;
     }
-    
-    ws = new WebSocket('ws://localhost:9559');
-    
+
+    ws = new WebSocket("ws://localhost:9559");
+
     ws.onopen = () => {
       isConnected = true;
       reconnectDelay = 500; // Reset delay on successful connection
-      
+
       // Start keep-alive
       keepServiceWorkerAlive();
-      
+
       // Start sending pings to server every 25 seconds
       if (pingInterval) {
         clearInterval(pingInterval);
       }
       pingInterval = setInterval(() => {
         if (ws && ws.readyState === WebSocket.OPEN) {
-          ws.send(JSON.stringify({ type: 'ping' }));
+          ws.send(JSON.stringify({ type: "ping" }));
         }
       }, 25000) as unknown as number;
-      
+
       // Notify popup about connection status
-      chrome.runtime.sendMessage({ type: 'connection_status', connected: true }).catch(() => {});
+      chrome.runtime
+        .sendMessage({ type: "connection_status", connected: true })
+        .catch(() => {});
     };
-    
+
     ws.onmessage = async (event) => {
       try {
         const request = JSON.parse(event.data);
-        
+
         // Handle pong response
-        if (request.type === 'pong') {
+        if (request.type === "pong") {
           return;
         }
-        
-        
+
         // Handle screenshot request from MCP server
         if (request.id && request.type) {
           // Special handling for large screenshots to avoid stack overflow
-          if (request.type === 'capture_viewport' || request.type === 'capture_full_page') {
+          if (
+            request.type === "capture_viewport" ||
+            request.type === "capture_full_page"
+          ) {
             try {
               const response = await handleScreenshotRequest(request);
-              
+
               // Don't log huge screenshots
               if (response.data?.screenshot?.length > 1000000) {
-                console.log('Extension sending response: Large screenshot', {
+                console.log("Extension sending response: Large screenshot", {
                   id: request.id,
                   success: response.success,
-                  screenshotSizeMB: Math.round(response.data.screenshot.length / 1024 / 1024)
+                  screenshotSizeMB: Math.round(
+                    response.data.screenshot.length / 1024 / 1024,
+                  ),
                 });
               } else {
-                console.log('Extension sending response:', {
+                console.log("Extension sending response:", {
                   id: request.id,
                   success: response.success,
                   hasData: !!response.data,
                   hasScreenshot: !!response.data?.screenshot,
                   screenshotSize: response.data?.screenshot?.length,
-                  error: response.error
+                  error: response.error,
                 });
               }
-              
+
               // Send response back with the same ID
               if (ws && ws.readyState === WebSocket.OPEN) {
                 // Check if we have a screenshot that might be large
                 if (response.success && response.data?.screenshot) {
                   const screenshot = response.data.screenshot;
                   const CHUNK_SIZE = 256 * 1024; // 256KB chunks - small enough to stringify safely
-                  
+
                   // If screenshot is large, chunk it
                   if (screenshot.length > CHUNK_SIZE) {
-                    const totalChunks = Math.ceil(screenshot.length / CHUNK_SIZE);
-                    console.log(`Chunking large screenshot: ${screenshot.length} bytes into ${totalChunks} chunks`);
-                    
+                    const totalChunks = Math.ceil(
+                      screenshot.length / CHUNK_SIZE,
+                    );
+                    console.log(
+                      `Chunking large screenshot: ${screenshot.length} bytes into ${totalChunks} chunks`,
+                    );
+
                     // Send header first
-                    ws.send(JSON.stringify({
-                      id: request.id,
-                      type: 'chunk_header',
-                      totalChunks: totalChunks,
-                      totalSize: screenshot.length
-                    }));
-                    
+                    ws.send(
+                      JSON.stringify({
+                        id: request.id,
+                        type: "chunk_header",
+                        totalChunks: totalChunks,
+                        totalSize: screenshot.length,
+                      }),
+                    );
+
                     // Send each chunk
                     for (let i = 0; i < totalChunks; i++) {
                       const start = i * CHUNK_SIZE;
-                      const end = Math.min(start + CHUNK_SIZE, screenshot.length);
+                      const end = Math.min(
+                        start + CHUNK_SIZE,
+                        screenshot.length,
+                      );
                       const chunk = screenshot.slice(start, end);
-                      
+
                       // Send this chunk
-                      ws.send(JSON.stringify({
-                        id: request.id,
-                        type: 'chunk_data',
-                        chunkIndex: i,
-                        data: chunk
-                      }));
+                      ws.send(
+                        JSON.stringify({
+                          id: request.id,
+                          type: "chunk_data",
+                          chunkIndex: i,
+                          data: chunk,
+                        }),
+                      );
                     }
-                    
+
                     // Send completion marker
-                    ws.send(JSON.stringify({
-                      id: request.id,
-                      type: 'chunk_complete'
-                    }));
+                    ws.send(
+                      JSON.stringify({
+                        id: request.id,
+                        type: "chunk_complete",
+                      }),
+                    );
                   } else {
                     // Small screenshot, send normally
                     ws.send(JSON.stringify({ id: request.id, ...response }));
@@ -141,13 +158,16 @@ function connectToMCPServer() {
                 }
               }
             } catch (error) {
-              console.error('Screenshot handling error:', error);
+              console.error("Screenshot handling error:", error);
               if (ws && ws.readyState === WebSocket.OPEN) {
-                ws.send(JSON.stringify({ 
-                  id: request.id, 
-                  success: false, 
-                  error: error instanceof Error ? error.message : 'Unknown error' 
-                }));
+                ws.send(
+                  JSON.stringify({
+                    id: request.id,
+                    success: false,
+                    error:
+                      error instanceof Error ? error.message : "Unknown error",
+                  }),
+                );
               }
             }
           } else {
@@ -156,61 +176,69 @@ function connectToMCPServer() {
             if (ws && ws.readyState === WebSocket.OPEN) {
               ws.send(JSON.stringify({ id: request.id, ...response }));
             } else {
-              console.error('WebSocket not open, cannot send response');
+              console.error("WebSocket not open, cannot send response");
             }
           }
         }
       } catch (error) {
-        console.error('Error handling message:', error);
+        console.error("Error handling message:", error);
       }
     };
-    
+
     ws.onclose = () => {
       isConnected = false;
       ws = null;
-      
+
       // Clear intervals
       if (pingInterval) {
         clearInterval(pingInterval);
         pingInterval = null;
       }
-      
-      chrome.runtime.sendMessage({ type: 'connection_status', connected: false }).catch(() => {});
-      
+
+      chrome.runtime
+        .sendMessage({ type: "connection_status", connected: false })
+        .catch(() => {});
+
       // Exponential backoff for reconnection (max 10 seconds for better responsiveness)
       reconnectDelay = Math.min(reconnectDelay * 2, 10000);
-      
-      reconnectTimer = setTimeout(connectToMCPServer, reconnectDelay) as unknown as number;
+
+      reconnectTimer = setTimeout(
+        connectToMCPServer,
+        reconnectDelay,
+      ) as unknown as number;
     };
-    
+
     ws.onerror = (error) => {
-      console.error('WebSocket error:', error);
+      console.error("WebSocket error:", error);
       // Connection will be retried in onclose handler
     };
   } catch (error) {
-    console.error('Failed to connect to MCP server:', error);
-    
+    console.error("Failed to connect to MCP server:", error);
+
     // Exponential backoff for reconnection (max 10 seconds)
     reconnectDelay = Math.min(reconnectDelay * 2, 10000);
     console.log(`Reconnecting in ${reconnectDelay}ms...`);
-    
-    reconnectTimer = setTimeout(connectToMCPServer, reconnectDelay) as unknown as number;
+
+    reconnectTimer = setTimeout(
+      connectToMCPServer,
+      reconnectDelay,
+    ) as unknown as number;
   }
 }
 
 chrome.runtime.onInstalled.addListener(() => {
   keepServiceWorkerAlive(); // Start keep-alive immediately
-  chrome.storage.local.get('extensionEnabled', (result) => {
+  chrome.storage.local.get("extensionEnabled", (result) => {
     extensionEnabled = result.extensionEnabled !== false; // Default to enabled
-    
+
     // Set icon based on state
     if (extensionEnabled) {
       chrome.action.setIcon({
         path: {
           "16": "icon-16.png",
           "48": "icon-48.png",
-          "128": "icon-128.png"
-        }
+          "128": "icon-128.png",
+        },
       });
       connectToMCPServer();
     } else {
@@ -218,8 +246,8 @@ chrome.runtime.onInstalled.addListener(() => {
         path: {
           "16": "icon-16-off.png",
           "48": "icon-48-off.png",
-          "128": "icon-128-off.png"
-        }
+          "128": "icon-128-off.png",
+        },
       });
     }
   });
@@ -227,17 +255,17 @@ chrome.runtime.onInstalled.addListener(() => {
 
 chrome.runtime.onStartup.addListener(() => {
   keepServiceWorkerAlive(); // Start keep-alive immediately
-  chrome.storage.local.get('extensionEnabled', (result) => {
+  chrome.storage.local.get("extensionEnabled", (result) => {
     extensionEnabled = result.extensionEnabled !== false; // Default to enabled
-    
+
     // Set icon based on state
     if (extensionEnabled) {
       chrome.action.setIcon({
         path: {
           "16": "icon-16.png",
           "48": "icon-48.png",
-          "128": "icon-128.png"
-        }
+          "128": "icon-128.png",
+        },
       });
       connectToMCPServer();
     } else {
@@ -245,8 +273,8 @@ chrome.runtime.onStartup.addListener(() => {
         path: {
           "16": "icon-16-off.png",
           "48": "icon-48-off.png",
-          "128": "icon-128-off.png"
-        }
+          "128": "icon-128-off.png",
+        },
       });
     }
   });
@@ -255,200 +283,228 @@ chrome.runtime.onStartup.addListener(() => {
 // Extension enabled state
 let extensionEnabled = true;
 
-chrome.runtime.onMessage.addListener((request: ScreenshotRequest | { type: 'check_connection' | 'reconnect' | 'TOGGLE_EXTENSION' | 'GET_EXTENSION_STATUS' }, sender, sendResponse) => {
-  if (request.type === 'check_connection') {
-    sendResponse({ connected: isConnected });
-    return false;
-  }
-  
-  if (request.type === 'reconnect') {
-    // Reset reconnect delay for manual reconnection
-    reconnectDelay = 500;
-    
-    // Clear any pending reconnect timer
-    if (reconnectTimer) {
-      clearTimeout(reconnectTimer);
-      reconnectTimer = null;
+chrome.runtime.onMessage.addListener(
+  (
+    request:
+      | ScreenshotRequest
+      | {
+          type:
+            | "check_connection"
+            | "reconnect"
+            | "TOGGLE_EXTENSION"
+            | "GET_EXTENSION_STATUS";
+        },
+    sender,
+    sendResponse,
+  ) => {
+    if (request.type === "check_connection") {
+      sendResponse({ connected: isConnected });
+      return false;
     }
-    
-    // Close existing connection if any
-    if (ws) {
-      ws.close();
-    }
-    
-    // Reconnect immediately
-    connectToMCPServer();
-    sendResponse({ success: true });
-    return false;
-  }
 
-  if (request.type === 'TOGGLE_EXTENSION') {
-    extensionEnabled = !extensionEnabled;
-    chrome.storage.local.set({ extensionEnabled });
-    
-    // Update extension icon based on state
-    if (extensionEnabled) {
-      chrome.action.setIcon({
-        path: {
-          "16": "icon-16.png",
-          "48": "icon-48.png",
-          "128": "icon-128.png"
-        }
-      });
-    } else {
-      chrome.action.setIcon({
-        path: {
-          "16": "icon-16-off.png",
-          "48": "icon-48-off.png",
-          "128": "icon-128-off.png"
-        }
-      });
-    }
-    
-    if (!extensionEnabled && ws) {
-      // Disconnect from MCP server when disabled
-      ws.close();
-    } else if (extensionEnabled && !ws) {
-      // Reconnect when enabled
+    if (request.type === "reconnect") {
+      // Reset reconnect delay for manual reconnection
+      reconnectDelay = 500;
+
+      // Clear any pending reconnect timer
+      if (reconnectTimer) {
+        clearTimeout(reconnectTimer);
+        reconnectTimer = null;
+      }
+
+      // Close existing connection if any
+      if (ws) {
+        ws.close();
+      }
+
+      // Reconnect immediately
       connectToMCPServer();
+      sendResponse({ success: true });
+      return false;
     }
-    
-    sendResponse({ enabled: extensionEnabled });
-    return false;
-  }
 
-  if (request.type === 'GET_EXTENSION_STATUS') {
-    sendResponse({ enabled: extensionEnabled });
-    return false;
-  }
-  
-  // Handle local screenshot requests from popup
-  handleScreenshotRequest(request as ScreenshotRequest).then(sendResponse);
-  return true; // Keep the message channel open for async response
-});
+    if (request.type === "TOGGLE_EXTENSION") {
+      extensionEnabled = !extensionEnabled;
+      chrome.storage.local.set({ extensionEnabled });
 
-async function handleScreenshotRequest(request: ScreenshotRequest): Promise<ScreenshotResponse> {
-  console.log('handleScreenshotRequest called with:', request);
-  
+      // Update extension icon based on state
+      if (extensionEnabled) {
+        chrome.action.setIcon({
+          path: {
+            "16": "icon-16.png",
+            "48": "icon-48.png",
+            "128": "icon-128.png",
+          },
+        });
+      } else {
+        chrome.action.setIcon({
+          path: {
+            "16": "icon-16-off.png",
+            "48": "icon-48-off.png",
+            "128": "icon-128-off.png",
+          },
+        });
+      }
+
+      if (!extensionEnabled && ws) {
+        // Disconnect from MCP server when disabled
+        ws.close();
+      } else if (extensionEnabled && !ws) {
+        // Reconnect when enabled
+        connectToMCPServer();
+      }
+
+      sendResponse({ enabled: extensionEnabled });
+      return false;
+    }
+
+    if (request.type === "GET_EXTENSION_STATUS") {
+      sendResponse({ enabled: extensionEnabled });
+      return false;
+    }
+
+    // Handle local screenshot requests from popup
+    handleScreenshotRequest(request as ScreenshotRequest).then(sendResponse);
+    return true; // Keep the message channel open for async response
+  },
+);
+
+async function handleScreenshotRequest(
+  request: ScreenshotRequest,
+): Promise<ScreenshotResponse> {
+  console.log("handleScreenshotRequest called with:", request);
+
   try {
     let targetTab;
-    
+
     // If URL is provided, find that specific tab
     if (request.url) {
       // Find all tabs that match the URL (could be partial match)
       const allTabs = await chrome.tabs.query({});
-      const matchingTabs = allTabs.filter(tab => {
+      const matchingTabs = allTabs.filter((tab) => {
         if (!tab.url) return false;
-        
-        const matches = 
+
+        const matches =
           tab.url === request.url ||
           tab.url.startsWith(request.url) ||
-          tab.url.startsWith(request.url.replace(/\/$/, '') + '/') ||
-          (request.url.includes('localhost') && tab.url.includes(request.url.split('?')[0]));
-        
+          tab.url.startsWith(request.url.replace(/\/$/, "") + "/") ||
+          (request.url.includes("localhost") &&
+            tab.url.includes(request.url.split("?")[0]));
+
         if (matches) {
-          console.log(`Tab ${tab.id} matches: ${tab.url} matches ${request.url}`);
+          console.log(
+            `Tab ${tab.id} matches: ${tab.url} matches ${request.url}`,
+          );
         }
-        
+
         return matches;
       });
-      
+
       if (matchingTabs.length > 0) {
         targetTab = matchingTabs[0];
         // We can now capture ANY tab, visible or not!
       } else {
-        return { success: false, error: `No tab found with URL: ${request.url}` };
+        return {
+          success: false,
+          error: `No tab found with URL: ${request.url}`,
+        };
       }
     } else {
       // Use the currently active tab
-      const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      const [activeTab] = await chrome.tabs.query({
+        active: true,
+        currentWindow: true,
+      });
       targetTab = activeTab;
     }
-    
+
     // Handle requests that don't need a target tab
-    if (request.type === 'get_all_tabs') {
+    if (request.type === "get_all_tabs") {
       const allTabs = await chrome.tabs.query({});
-      const tabInfo = allTabs.map(tab => ({
+      const tabInfo = allTabs.map((tab) => ({
         id: tab.id,
         url: tab.url,
         title: tab.title,
         active: tab.active,
-        windowId: tab.windowId
+        windowId: tab.windowId,
       }));
       return { success: true, data: { tabs: tabInfo } };
     }
-    
+
     // For other requests, we need a target tab
     if (!targetTab || !targetTab.id) {
-      return { success: false, error: 'No target tab found' };
+      return { success: false, error: "No target tab found" };
     }
 
     switch (request.type) {
-      case 'capture_viewport': {
+      case "capture_viewport": {
         // Capture using debugger API for any tab (visible or not)
         try {
           // Detach any existing debugger first
           try {
             await chrome.debugger.detach({ tabId: targetTab.id });
-          } catch (e) {
+          } catch {
             // Ignore if not attached
           }
-          
+
           // Attach debugger to the tab
-          await chrome.debugger.attach({ tabId: targetTab.id }, '1.3');
-          
+          await chrome.debugger.attach({ tabId: targetTab.id }, "1.3");
+
           // Capture screenshot using debugger protocol - use WebP for efficiency
           const result = await chrome.debugger.sendCommand(
             { tabId: targetTab.id },
-            'Page.captureScreenshot',
-            { 
-              format: 'webp',
-              quality: 75 
-            }
+            "Page.captureScreenshot",
+            {
+              format: "webp",
+              quality: 75,
+            },
           );
-          
+
           // Detach debugger immediately
           await chrome.debugger.detach({ tabId: targetTab.id });
-          
+
           // Extract only the screenshot data, nothing else that could have circular refs
           const screenshotData = (result as any).data;
-          if (typeof screenshotData !== 'string') {
-            throw new Error('Invalid screenshot data received');
+          if (typeof screenshotData !== "string") {
+            throw new Error("Invalid screenshot data received");
           }
-          
+
           // Always return the same structure - chunking happens at the WebSocket layer
           return { success: true, data: { screenshot: screenshotData } };
         } catch (error) {
-          console.error('Screenshot capture failed:', error);
-          return { success: false, error: `Failed to capture screenshot: ${error.message || 'Unknown error'}` };
+          console.error("Screenshot capture failed:", error);
+          return {
+            success: false,
+            error: `Failed to capture screenshot: ${error.message || "Unknown error"}`,
+          };
         }
       }
-      
-      case 'capture_full_page': {
+
+      case "capture_full_page": {
         // Capture full page using debugger API
         try {
           // Detach any existing debugger first
           try {
             await chrome.debugger.detach({ tabId: targetTab.id });
-          } catch (e) {
+          } catch {
             // Ignore if not attached
           }
-          
-          await chrome.debugger.attach({ tabId: targetTab.id }, '1.3');
-          
+
+          await chrome.debugger.attach({ tabId: targetTab.id }, "1.3");
+
           // Get page metrics for full page capture
           const metrics = await chrome.debugger.sendCommand(
             { tabId: targetTab.id },
-            'Page.getLayoutMetrics',
-            {}
+            "Page.getLayoutMetrics",
+            {},
           );
-          
+
           // Capture full page - use WebP for efficiency
           const result = await chrome.debugger.sendCommand(
             { tabId: targetTab.id },
-            'Page.captureScreenshot',
-            { 
-              format: 'webp',
+            "Page.captureScreenshot",
+            {
+              format: "webp",
               quality: 75,
               captureBeyondViewport: true,
               clip: {
@@ -456,87 +512,109 @@ async function handleScreenshotRequest(request: ScreenshotRequest): Promise<Scre
                 y: 0,
                 width: (metrics as any).cssContentSize.width,
                 height: (metrics as any).cssContentSize.height,
-                scale: 1
-              }
-            }
+                scale: 1,
+              },
+            },
           );
-          
+
           await chrome.debugger.detach({ tabId: targetTab.id });
-          
+
           return { success: true, data: { screenshot: (result as any).data } };
         } catch (error) {
-          console.error('Full page capture failed:', error);
-          return { success: false, error: `Failed to capture full page: ${error.message || 'Unknown error'}` };
-        }
-      }
-      
-      
-      case 'get_page_info': {
-        // Check if this is a restricted URL
-        if (targetTab.url && (targetTab.url.startsWith('chrome://') || targetTab.url.startsWith('chrome-extension://'))) {
-          return { 
-            success: false, 
-            error: 'Cannot access chrome:// or extension pages due to browser security restrictions. Please navigate to a regular webpage.' 
+          console.error("Full page capture failed:", error);
+          return {
+            success: false,
+            error: `Failed to capture full page: ${error.message || "Unknown error"}`,
           };
         }
-        
+      }
+
+      case "get_page_info": {
+        // Check if this is a restricted URL
+        if (
+          targetTab.url &&
+          (targetTab.url.startsWith("chrome://") ||
+            targetTab.url.startsWith("chrome-extension://"))
+        ) {
+          return {
+            success: false,
+            error:
+              "Cannot access chrome:// or extension pages due to browser security restrictions. Please navigate to a regular webpage.",
+          };
+        }
+
         try {
           const results = await chrome.scripting.executeScript({
             target: { tabId: targetTab.id },
-            func: getPageInfo
+            func: getPageInfo,
           });
-          
+
           if (results && results[0]) {
             return { success: true, data: { pageInfo: results[0].result } };
           }
-          return { success: false, error: 'Failed to get page info' };
+          return { success: false, error: "Failed to get page info" };
         } catch (error) {
-          if (error.message?.includes('Cannot access')) {
-            return { 
-              success: false, 
-              error: 'Cannot access this page due to browser security restrictions. Please navigate to a regular webpage.' 
+          if (error.message?.includes("Cannot access")) {
+            return {
+              success: false,
+              error:
+                "Cannot access this page due to browser security restrictions. Please navigate to a regular webpage.",
             };
           }
-          return { success: false, error: `Failed to get page info: ${error.message}` };
-        }
-      }
-      
-      case 'get_page_source': {
-        // Check if this is a restricted URL
-        if (targetTab.url && (targetTab.url.startsWith('chrome://') || targetTab.url.startsWith('chrome-extension://'))) {
-          return { 
-            success: false, 
-            error: 'Cannot access chrome:// or extension pages due to browser security restrictions. Please navigate to a regular webpage.' 
+          return {
+            success: false,
+            error: `Failed to get page info: ${error.message}`,
           };
         }
-        
+      }
+
+      case "get_page_source": {
+        // Check if this is a restricted URL
+        if (
+          targetTab.url &&
+          (targetTab.url.startsWith("chrome://") ||
+            targetTab.url.startsWith("chrome-extension://"))
+        ) {
+          return {
+            success: false,
+            error:
+              "Cannot access chrome:// or extension pages due to browser security restrictions. Please navigate to a regular webpage.",
+          };
+        }
+
         try {
           const results = await chrome.scripting.executeScript({
             target: { tabId: targetTab.id },
-            func: getPageSource
+            func: getPageSource,
           });
-          
+
           if (results && results[0]) {
             return { success: true, data: { source: results[0].result } };
           }
-          return { success: false, error: 'Failed to get page source' };
+          return { success: false, error: "Failed to get page source" };
         } catch (error) {
-          if (error.message?.includes('Cannot access')) {
-            return { 
-              success: false, 
-              error: 'Cannot access this page due to browser security restrictions. Please navigate to a regular webpage.' 
+          if (error.message?.includes("Cannot access")) {
+            return {
+              success: false,
+              error:
+                "Cannot access this page due to browser security restrictions. Please navigate to a regular webpage.",
             };
           }
-          return { success: false, error: `Failed to get page source: ${error.message}` };
+          return {
+            success: false,
+            error: `Failed to get page source: ${error.message}`,
+          };
         }
       }
-      
-      
+
       default:
-        return { success: false, error: 'Unknown request type' };
+        return { success: false, error: "Unknown request type" };
     }
   } catch (error) {
-    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown error",
+    };
   }
 }
 
@@ -548,7 +626,7 @@ function getPageInfo() {
     width: window.innerWidth,
     height: window.innerHeight,
     scrollHeight: document.documentElement.scrollHeight,
-    scrollWidth: document.documentElement.scrollWidth
+    scrollWidth: document.documentElement.scrollWidth,
   };
 }
 
@@ -559,17 +637,17 @@ function getPageSource() {
 
 // Try to connect immediately when the background script loads (if enabled)
 keepServiceWorkerAlive(); // Start keep-alive immediately on script load
-chrome.storage.local.get('extensionEnabled', (result) => {
+chrome.storage.local.get("extensionEnabled", (result) => {
   extensionEnabled = result.extensionEnabled !== false; // Default to enabled
-  
+
   // Set icon based on state
   if (extensionEnabled) {
     chrome.action.setIcon({
       path: {
         "16": "icon-16.png",
         "48": "icon-48.png",
-        "128": "icon-128.png"
-      }
+        "128": "icon-128.png",
+      },
     });
     connectToMCPServer();
   } else {
@@ -577,8 +655,8 @@ chrome.storage.local.get('extensionEnabled', (result) => {
       path: {
         "16": "icon-16-off.png",
         "48": "icon-48-off.png",
-        "128": "icon-128-off.png"
-      }
+        "128": "icon-128-off.png",
+      },
     });
   }
 });
