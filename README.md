@@ -1,6 +1,13 @@
-# MagicEyes
-
-Give your code assistant eyes. One command to see everything.
+<div align="center">
+  <img src="./main-icon.png" alt="MagicEyes" width="128" height="128" />
+  
+  # MagicEyes
+  
+  
+  **Give your code assistant eyes. One command to see everything.**
+  
+  ---
+</div>
 
 ```bash
 npx magiceyes
