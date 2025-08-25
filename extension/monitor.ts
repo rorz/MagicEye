@@ -54,7 +54,6 @@ class VisionMonitor {
   }
 
   private start() {
-    console.log('🎯 MagicEyes Monitor: ACTIVATED');
     
     // Monitor console errors
     if (this.config.captureOnError) {
@@ -86,7 +85,6 @@ class VisionMonitor {
   }
 
   private stop() {
-    console.log('🛑 MagicEyes Monitor: DEACTIVATED');
     
     if (this.mutationObserver) {
       this.mutationObserver.disconnect();
@@ -245,7 +243,6 @@ class VisionMonitor {
     // Clear queue after processing
     setTimeout(() => this.captureQueue.delete(captureKey), 1000);
 
-    console.log(`📸 Auto-capturing: ${reason}`, metadata);
 
     // Send to background for processing
     chrome.runtime.sendMessage({

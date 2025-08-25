@@ -14,10 +14,8 @@ class ExtensionBridge {
     try {
       // Create WebSocket server on port 9559
       this.wss = new WebSocketServer({ port: 9559 });
-      console.error('WebSocket server listening on ws://localhost:9559');
       
       this.wss.on('connection', (ws) => {
-        console.error('Chrome extension connected via WebSocket');
         this.activeConnection = ws;
         this.lastPongReceived = Date.now();
         
@@ -31,7 +29,6 @@ class ExtensionBridge {
           if (this.activeConnection && this.activeConnection.readyState === WebSocket.OPEN) {
             // Check if we've received a pong recently (within 40 seconds)
             if (Date.now() - this.lastPongReceived > 40000) {
-              console.error('No pong received in 40 seconds, closing connection');
               this.activeConnection.terminate();
               this.activeConnection = null;
               return;
@@ -39,14 +36,12 @@ class ExtensionBridge {
             
             // Send ping
             this.activeConnection.ping();
-            console.error('Sent ping to extension');
           }
         }, 20000);
         
         // Handle pong responses
         ws.on('pong', () => {
           this.lastPongReceived = Date.now();
-          console.error('Received pong from extension');
         });
         
         // Handle incoming messages from extension
@@ -68,12 +63,10 @@ class ExtensionBridge {
               }
             }
           } catch (error) {
-            console.error('Error parsing message:', error);
           }
         });
         
         ws.on('close', () => {
-          console.error('Chrome extension disconnected');
           this.activeConnection = null;
           if (this.pingInterval) {
             clearInterval(this.pingInterval);
@@ -82,12 +75,10 @@ class ExtensionBridge {
         });
         
         ws.on('error', (error) => {
-          console.error('WebSocket error:', error);
         });
       });
       
       this.wss.on('error', (error) => {
-        console.error('WebSocket server error:', error);
         // Don't crash, just log the error
       });
       
@@ -95,7 +86,6 @@ class ExtensionBridge {
       return Promise.resolve();
       
     } catch (error) {
-      console.error('Failed to create WebSocket server:', error);
       // Still resolve to not block MCP server
       return Promise.resolve();
     }
@@ -121,7 +111,6 @@ class ExtensionBridge {
       // Check if extension is connected
       if (!this.activeConnection || this.activeConnection.readyState !== WebSocket.OPEN) {
         // Return error if no extension connected
-        console.error('Chrome extension not connected to WebSocket');
         setTimeout(() => {
           const callback = this.messageQueue.get(id);
           if (callback) {
@@ -139,7 +128,6 @@ class ExtensionBridge {
         const message = { id, ...request };
         this.activeConnection.send(JSON.stringify(message));
       } catch (error) {
-        console.error('Failed to send message to extension:', error);
         clearTimeout(timeout);
         this.messageQueue.delete(id);
         reject(new Error('Failed to send message to extension'));

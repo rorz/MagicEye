@@ -17,7 +17,7 @@
     "build:extension": "tsx scripts/build.ts --target=extension",
     "build:server": "tsx scripts/build.ts --target=server",
     "dev:extension": "tsx scripts/build.ts --target=extension --watch",
-    "package:extension": "cd dist/extension && zip -r ../../magiceye-extension.zip .",
+    "package:extension": "cd dist/extension && zip -r ../../magiceyes-extension.zip .",
     "test:server": "node index.js --server",
     "test:setup": "node index.js",
     "sync:version": "node scripts/sync-version.js",
@@ -41,12 +41,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/rorz/MagicEye.git"
+    "url": "git+https://github.com/rorz/magiceyes.git"
   },
   "bugs": {
-    "url": "https://github.com/rorz/MagicEye/issues"
+    "url": "https://github.com/rorz/magiceyes/issues"
   },
-  "homepage": "https://magiceye.dev",
+  "homepage": "https://magiceyes.dev",
   "devDependencies": {
     "@types/chrome": "^0.0.254",
     "@types/node": "^20.11.0",

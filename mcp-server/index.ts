@@ -74,7 +74,6 @@ function detectDevServer(): string | undefined {
       if (port) {
         try {
           execSync(`curl -s http://localhost:${port} > /dev/null 2>&1`, { timeout: 1000 });
-          console.error(`Detected dev server running on http://localhost:${port}`);
           return `http://localhost:${port}`;
         } catch {
           // Server not running on this port
@@ -86,7 +85,6 @@ function detectDevServer(): string | undefined {
       for (const p of commonPorts) {
         try {
           execSync(`curl -s http://localhost:${p} > /dev/null 2>&1`, { timeout: 500 });
-          console.error(`Found dev server running on http://localhost:${p}`);
           return `http://localhost:${p}`;
         } catch {
           // Not running on this port
@@ -94,7 +92,6 @@ function detectDevServer(): string | undefined {
       }
     }
   } catch (error) {
-    console.error('Error detecting dev server:', error);
   }
   
   return undefined;
@@ -290,7 +287,6 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           targetUrl = detectedDevServer;
           
           if (targetUrl) {
-            console.error(`Using auto-detected dev server: ${targetUrl}`);
           }
         }
         
@@ -450,10 +446,8 @@ async function main() {
   await server.connect(transport);
   
   // Simple startup message to stderr (shows in Claude)
-  console.error('👁️ MagicEyes ready');
 }
 
 main().catch((error) => {
-  console.error('Server error:', error);
   process.exit(1);
 });

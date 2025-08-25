@@ -19,7 +19,7 @@ function keepServiceWorkerAlive() {
   keepAliveInterval = setInterval(() => {
     // Simply accessing chrome API keeps the worker alive
     chrome.storage.local.get('keepAlive', () => {
-      console.log('Service worker keep-alive ping');
+      // Keep-alive ping
     });
   }, 20000) as unknown as number;
 }
@@ -89,7 +89,6 @@ function connectToMCPServer() {
     ws = new WebSocket('ws://localhost:9559');
     
     ws.onopen = () => {
-      console.log('Connected to MCP server via WebSocket');
       isConnected = true;
       reconnectDelay = 500; // Reset delay on successful connection
       
@@ -103,7 +102,6 @@ function connectToMCPServer() {
       pingInterval = setInterval(() => {
         if (ws && ws.readyState === WebSocket.OPEN) {
           ws.send(JSON.stringify({ type: 'ping' }));
-          console.log('Sent ping to MCP server');
         }
       }, 25000) as unknown as number;
       
@@ -117,11 +115,9 @@ function connectToMCPServer() {
         
         // Handle pong response
         if (request.type === 'pong') {
-          console.log('Received pong from MCP server');
           return;
         }
         
-        console.log('Received request from MCP:', request);
         
         // Handle screenshot request from MCP server
         if (request.id && request.type) {
@@ -139,7 +135,6 @@ function connectToMCPServer() {
     };
     
     ws.onclose = () => {
-      console.log('Disconnected from MCP server');
       isConnected = false;
       ws = null;
       
@@ -153,7 +148,6 @@ function connectToMCPServer() {
       
       // Exponential backoff for reconnection (max 10 seconds for better responsiveness)
       reconnectDelay = Math.min(reconnectDelay * 2, 10000);
-      console.log(`Reconnecting in ${reconnectDelay}ms...`);
       
       reconnectTimer = setTimeout(connectToMCPServer, reconnectDelay) as unknown as number;
     };
@@ -174,7 +168,6 @@ function connectToMCPServer() {
 }
 
 chrome.runtime.onInstalled.addListener(() => {
-  console.log('MagicEyes extension installed');
   keepServiceWorkerAlive(); // Start keep-alive immediately
   connectToMCPServer();
 });
@@ -246,23 +239,29 @@ chrome.runtime.onMessage.addListener((request: ScreenshotRequest | { type: 'chec
 
     // Auto-send to MCP if connected
     if (isConnected && ws) {
-      handleScreenshotRequest({ type: 'capture_viewport' }).then(result => {
-        const enrichedCapture = {
-          ...capture,
-          screenshot: result.data?.screenshot,
-          success: result.success
-        };
-        
-        // Send to MCP through WebSocket
-        if (ws && ws.readyState === WebSocket.OPEN) {
-          ws.send(JSON.stringify({
-            type: 'auto_capture_event',
-            data: enrichedCapture
-          }));
-        } else {
-          console.log('WebSocket not open, skipping auto-capture send');
-        }
-      });
+      // For auto-capture, ONLY use standard captureVisibleTab (no debugger!)
+      // The tab that triggered this is already visible since user is interacting with it
+      chrome.tabs.captureVisibleTab(sender.tab?.windowId, { format: 'png' })
+        .then(screenshot => {
+          const base64Data = screenshot.replace(/^data:image\/[a-z]+;base64,/, '');
+          const enrichedCapture = {
+            ...capture,
+            screenshot: base64Data,
+            success: true
+          };
+          
+          // Send to MCP through WebSocket
+          if (ws && ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({
+              type: 'auto_capture_event',
+              data: enrichedCapture
+            }));
+          }
+        })
+        .catch(error => {
+          // Silent fail for auto-capture - don't disrupt user
+          console.log('Auto-capture skipped:', error.message);
+        });
     }
 
     sendResponse({ success: true, queued: true });
@@ -360,7 +359,7 @@ async function handleScreenshotRequest(request: ScreenshotRequest): Promise<Scre
           
           return { success: true, data: { screenshot: (result as any).data } };
         } catch (debuggerError) {
-          console.warn('Debugger capture failed, falling back to visible tab capture:', debuggerError);
+          // Fallback to visible tab capture
           
           // Fallback to regular capture if debugger fails (e.g., on chrome:// pages)
           try {

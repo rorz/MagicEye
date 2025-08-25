@@ -83,8 +83,8 @@ Built for developers who value their time.
 - Screenshots never leave your machine
 
 ## Support
-- GitHub: https://github.com/rorz/MagicEyes
-- Issues: https://github.com/rorz/MagicEyes/issues
+- GitHub: https://github.com/rorz/magiceyes
+- Issues: https://github.com/rorz/magiceyes/issues
 
 ## Publishing Checklist
 

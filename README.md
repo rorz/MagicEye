@@ -36,7 +36,7 @@ Click icon. Capture page. Claude sees it. Done.
 ## Development
 
 ```bash
-git clone https://github.com/rorz/MagicEyes.git
+git clone https://github.com/rorz/magiceyes.git
 cd magiceyes
 pnpm install
 pnpm run build
@@ -44,10 +44,10 @@ pnpm run build
 
 ## Links
 
-- [Documentation](https://magiceye.dev)
+- [Documentation](https://magiceyes.dev)
 - [Chrome Extension](https://chrome.google.com/webstore/detail/magiceyes) (coming soon)
 - [NPM Package](https://www.npmjs.com/package/magiceyes)
-- [Issues](https://github.com/rorz/MagicEyes/issues)
+- [Issues](https://github.com/rorz/magiceyes/issues)
 
 ## License
 
