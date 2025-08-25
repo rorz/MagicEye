@@ -53,7 +53,12 @@ const tools: Tool[] = [
     description: 'Get information about the current page (URL, title, dimensions)',
     inputSchema: {
       type: 'object',
-      properties: {}
+      properties: {
+        url: {
+          type: 'string',
+          description: 'URL of the tab to get info from (will switch to this tab automatically)'
+        }
+      }
     }
   },
   {
@@ -61,7 +66,12 @@ const tools: Tool[] = [
     description: 'Get the full HTML source of the current page',
     inputSchema: {
       type: 'object',
-      properties: {}
+      properties: {
+        url: {
+          type: 'string',
+          description: 'URL of the tab to get source from (will switch to this tab automatically)'
+        }
+      }
     }
   },
   {
@@ -143,7 +153,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       
       case 'get_page_info': {
         const response = await sendScreenshotRequest({
-          type: 'get_page_info'
+          type: 'get_page_info',
+          url: args?.url
         });
         
         if (response.success && response.data?.pageInfo) {
@@ -162,7 +173,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       
       case 'get_page_source': {
         const response = await sendScreenshotRequest({
-          type: 'get_page_source'
+          type: 'get_page_source',
+          url: args?.url
         });
         
         if (response.success && response.data?.source) {

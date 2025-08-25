@@ -547,118 +547,73 @@ async function handleScreenshotRequest(request: ScreenshotRequest): Promise<Scre
         }
       }
       
-      case 'capture_element': {
-        // Inject script to capture specific element
-        const results = await chrome.scripting.executeScript({
-          target: { tabId: targetTab.id },
-          func: captureElement,
-          args: [request.selector || 'body', request.index || 0, request.padding || 0]
-        });
-        
-        if (results && results[0] && results[0].result) {
-          const elementData = results[0].result;
-          
-          // Capture the visible area
-          const screenshot = await chrome.tabs.captureVisibleTab(
-            targetTab.windowId,
-            { format: request.format || 'png' }
-          );
-          
-          // Crop to element bounds
-          // For now, return full viewport with element info
-          // In production, we'd use canvas to crop
-          const base64Data = screenshot.replace(/^data:image\/[a-z]+;base64,/, '');
-          return { 
-            success: true, 
-            data: { 
-              screenshot: base64Data,
-              elementBounds: elementData
-            } 
-          };
-        }
-        return { success: false, error: 'Failed to capture element' };
-      }
       
       case 'get_page_info': {
-        const results = await chrome.scripting.executeScript({
-          target: { tabId: targetTab.id },
-          func: getPageInfo
-        });
-        
-        if (results && results[0]) {
-          return { success: true, data: { pageInfo: results[0].result } };
+        // Check if this is a restricted URL
+        if (targetTab.url && (targetTab.url.startsWith('chrome://') || targetTab.url.startsWith('chrome-extension://'))) {
+          return { 
+            success: false, 
+            error: 'Cannot access chrome:// or extension pages due to browser security restrictions. Please navigate to a regular webpage.' 
+          };
         }
-        return { success: false, error: 'Failed to get page info' };
+        
+        try {
+          const results = await chrome.scripting.executeScript({
+            target: { tabId: targetTab.id },
+            func: getPageInfo
+          });
+          
+          if (results && results[0]) {
+            return { success: true, data: { pageInfo: results[0].result } };
+          }
+          return { success: false, error: 'Failed to get page info' };
+        } catch (error) {
+          if (error.message?.includes('Cannot access')) {
+            return { 
+              success: false, 
+              error: 'Cannot access this page due to browser security restrictions. Please navigate to a regular webpage.' 
+            };
+          }
+          return { success: false, error: `Failed to get page info: ${error.message}` };
+        }
       }
       
       case 'get_page_source': {
-        const results = await chrome.scripting.executeScript({
-          target: { tabId: targetTab.id },
-          func: getPageSource
-        });
-        
-        if (results && results[0]) {
-          return { success: true, data: { source: results[0].result } };
+        // Check if this is a restricted URL
+        if (targetTab.url && (targetTab.url.startsWith('chrome://') || targetTab.url.startsWith('chrome-extension://'))) {
+          return { 
+            success: false, 
+            error: 'Cannot access chrome:// or extension pages due to browser security restrictions. Please navigate to a regular webpage.' 
+          };
         }
-        return { success: false, error: 'Failed to get page source' };
+        
+        try {
+          const results = await chrome.scripting.executeScript({
+            target: { tabId: targetTab.id },
+            func: getPageSource
+          });
+          
+          if (results && results[0]) {
+            return { success: true, data: { source: results[0].result } };
+          }
+          return { success: false, error: 'Failed to get page source' };
+        } catch (error) {
+          if (error.message?.includes('Cannot access')) {
+            return { 
+              success: false, 
+              error: 'Cannot access this page due to browser security restrictions. Please navigate to a regular webpage.' 
+            };
+          }
+          return { success: false, error: `Failed to get page source: ${error.message}` };
+        }
       }
       
-      case 'get_element_source': {
-        const results = await chrome.scripting.executeScript({
-          target: { tabId: targetTab.id },
-          func: getElementSource,
-          args: [request.selector || 'body', request.index || 0]
-        });
-        
-        if (results && results[0]) {
-          return { success: true, data: { source: results[0].result } };
-        }
-        return { success: false, error: 'Failed to get element source' };
-      }
       
       default:
         return { success: false, error: 'Unknown request type' };
     }
   } catch (error) {
     return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
-  }
-}
-
-// Function to be injected for element capture
-function captureElement(selector: string, index: number, padding: number) {
-  try {
-    const elements = document.querySelectorAll(selector);
-    if (!elements || elements.length === 0) {
-      return null;
-    }
-    
-    const element = elements[Math.min(index, elements.length - 1)] as HTMLElement;
-    const rect = element.getBoundingClientRect();
-    
-    // Highlight the element temporarily
-    const originalOutline = element.style.outline;
-    element.style.outline = '3px solid #FF6B6B';
-    
-    setTimeout(() => {
-      element.style.outline = originalOutline;
-    }, 500);
-    
-    // Scroll element into view if needed
-    if (rect.top < 0 || rect.bottom > window.innerHeight) {
-      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
-    
-    return {
-      x: Math.max(0, rect.left - padding),
-      y: Math.max(0, rect.top - padding),
-      width: rect.width + (padding * 2),
-      height: rect.height + (padding * 2),
-      selector: selector,
-      index: index
-    };
-  } catch (error) {
-    console.error('Error capturing element:', error);
-    return null;
   }
 }
 
@@ -677,30 +632,6 @@ function getPageInfo() {
 // Function to get full page source
 function getPageSource() {
   return document.documentElement.outerHTML;
-}
-
-// Function to get element source
-function getElementSource(selector: string, index: number) {
-  try {
-    const elements = document.querySelectorAll(selector);
-    if (!elements || elements.length === 0) {
-      return `<!-- No elements found for selector: ${selector} -->`;
-    }
-    
-    const element = elements[Math.min(index, elements.length - 1)] as HTMLElement;
-    
-    // Highlight briefly for visual feedback
-    const originalOutline = element.style.outline;
-    element.style.outline = '3px solid #00FF00';
-    
-    setTimeout(() => {
-      element.style.outline = originalOutline;
-    }, 500);
-    
-    return element.outerHTML;
-  } catch (error) {
-    return `<!-- Error getting element source: ${error} -->`;
-  }
 }
 
 // Try to connect immediately when the background script loads
