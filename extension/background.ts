@@ -24,59 +24,6 @@ function keepServiceWorkerAlive() {
   }, 20000) as unknown as number;
 }
 
-// Update extension icon based on enabled state
-function updateExtensionIcon(enabled: boolean) {
-  if (enabled) {
-    // Eye open - normal icon
-    chrome.action.setIcon({
-      path: {
-        "16": "icon-16.png",
-        "48": "icon-48.png",
-        "128": "icon-128.png"
-      }
-    });
-  } else {
-    // Eye closed - create grayscale version using canvas
-    const canvas = new OffscreenCanvas(128, 128);
-    const ctx = canvas.getContext('2d');
-    if (ctx) {
-      const img = new Image();
-      img.onload = () => {
-        // Draw the image
-        ctx.drawImage(img, 0, 0, 128, 128);
-        
-        // Get image data and apply grayscale + darkening
-        const imageData = ctx.getImageData(0, 0, 128, 128);
-        const data = imageData.data;
-        
-        for (let i = 0; i < data.length; i += 4) {
-          // Convert to grayscale
-          const gray = data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114;
-          // Apply darkening (30% brightness)
-          const darkened = gray * 0.3;
-          data[i] = darkened;     // Red
-          data[i + 1] = darkened; // Green
-          data[i + 2] = darkened; // Blue
-          // Keep alpha channel unchanged
-        }
-        
-        ctx.putImageData(imageData, 0, 0);
-        
-        // Convert canvas to image data and set as icon
-        canvas.convertToBlob().then(blob => {
-          const reader = new FileReader();
-          reader.onload = () => {
-            chrome.action.setIcon({
-              imageData: ctx.getImageData(0, 0, 128, 128)
-            });
-          };
-          reader.readAsDataURL(blob);
-        });
-      };
-      img.src = 'icon-128.png';
-    }
-  }
-}
 
 function connectToMCPServer() {
   try {
@@ -261,22 +208,8 @@ chrome.runtime.onStartup.addListener(() => {
   connectToMCPServer();
 });
 
-// Auto-capture queue for Claude
-const captureHistory: any[] = [];
-let autoCaptureEnabled = true; // Default to true
-
-chrome.storage.local.get('autoCaptureEnabled', (result) => {
-  // Default to true if not explicitly set to false
-  autoCaptureEnabled = result.autoCaptureEnabled !== false;
-  
-  // Update icon based on initial state
-  updateExtensionIcon(autoCaptureEnabled);
-  
-  // If first time, save the default
-  if (result.autoCaptureEnabled === undefined) {
-    chrome.storage.local.set({ autoCaptureEnabled: true });
-  }
-});
+// Auto-capture is disabled to prevent debugger attachment on page loads
+let autoCaptureEnabled = false;
 
 chrome.runtime.onMessage.addListener((request: ScreenshotRequest | { type: 'check_connection' | 'reconnect' | 'AUTO_CAPTURE' | 'GET_CAPTURE_HISTORY' | 'TOGGLE_AUTO_CAPTURE' }, sender, sendResponse) => {
   if (request.type === 'check_connection') {
@@ -306,83 +239,19 @@ chrome.runtime.onMessage.addListener((request: ScreenshotRequest | { type: 'chec
   }
 
   if (request.type === 'AUTO_CAPTURE') {
-    if (!autoCaptureEnabled) {
-      sendResponse({ success: false, reason: 'Auto-capture disabled' });
-      return false;
-    }
-
-    // Add to history
-    const capture = {
-      ...request,
-      timestamp: Date.now(),
-      tabId: sender.tab?.id
-    };
-    
-    captureHistory.push(capture);
-    if (captureHistory.length > 50) captureHistory.shift(); // Keep last 50
-
-    // Auto-send to MCP if connected
-    if (isConnected && ws) {
-      // For auto-capture, ONLY use standard captureVisibleTab (no debugger!)
-      // The tab that triggered this is already visible since user is interacting with it
-      chrome.tabs.captureVisibleTab(sender.tab?.windowId, { format: 'png' })
-        .then(screenshot => {
-          const base64Data = screenshot.replace(/^data:image\/[a-z]+;base64,/, '');
-          const enrichedCapture = {
-            ...capture,
-            screenshot: base64Data,
-            success: true
-          };
-          
-          // Send to MCP through WebSocket
-          if (ws && ws.readyState === WebSocket.OPEN) {
-            ws.send(JSON.stringify({
-              type: 'auto_capture_event',
-              data: enrichedCapture
-            }));
-          }
-        })
-        .catch(error => {
-          // Silent fail for auto-capture - don't disrupt user
-          console.log('Auto-capture skipped:', error.message);
-        });
-    }
-
-    sendResponse({ success: true, queued: true });
+    // Auto-capture is disabled - we don't want to attach debugger on page reloads
+    sendResponse({ success: false, reason: 'Auto-capture disabled' });
     return false;
   }
 
   if (request.type === 'GET_CAPTURE_HISTORY') {
-    sendResponse({ history: captureHistory });
+    sendResponse({ history: [] }); // No capture history since auto-capture is disabled
     return false;
   }
 
   if (request.type === 'TOGGLE_AUTO_CAPTURE') {
-    // Accept explicit enabled value or toggle
-    if ('enabled' in request) {
-      autoCaptureEnabled = request.enabled;
-    } else {
-      autoCaptureEnabled = !autoCaptureEnabled;
-    }
-    
-    chrome.storage.local.set({ autoCaptureEnabled });
-    
-    // Update extension icon based on state
-    updateExtensionIcon(autoCaptureEnabled);
-    
-    // Notify all tabs
-    chrome.tabs.query({}, (tabs) => {
-      tabs.forEach(tab => {
-        if (tab.id) {
-          chrome.tabs.sendMessage(tab.id, {
-            type: 'UPDATE_MONITOR_CONFIG',
-            config: { enabled: autoCaptureEnabled }
-          }).catch(() => {});
-        }
-      });
-    });
-    
-    sendResponse({ enabled: autoCaptureEnabled });
+    // Auto-capture is permanently disabled
+    sendResponse({ enabled: false });
     return false;
   }
   
@@ -449,7 +318,7 @@ async function handleScreenshotRequest(request: ScreenshotRequest): Promise<Scre
 
     switch (request.type) {
       case 'capture_viewport': {
-        // Try to capture using debugger API for any tab (visible or not)
+        // Capture using debugger API for any tab (visible or not)
         try {
           // Detach any existing debugger first
           try {
@@ -482,27 +351,22 @@ async function handleScreenshotRequest(request: ScreenshotRequest): Promise<Scre
           
           // Always return the same structure - chunking happens at the WebSocket layer
           return { success: true, data: { screenshot: screenshotData } };
-        } catch (debuggerError) {
-          console.error('Debugger capture failed:', debuggerError);
-          
-          // Fallback to regular capture if debugger fails (e.g., on chrome:// pages)
-          try {
-            const screenshot = await chrome.tabs.captureVisibleTab(
-              targetTab.windowId,
-              { format: request.format || 'png' }
-            );
-            const base64Data = screenshot.replace(/^data:image\/[a-z]+;base64,/, '');
-            return { success: true, data: { screenshot: base64Data } };
-          } catch (fallbackError) {
-            console.error('Fallback capture also failed:', fallbackError);
-            return { success: false, error: `Failed to capture screenshot: ${fallbackError.message || 'Unknown error'}` };
-          }
+        } catch (error) {
+          console.error('Screenshot capture failed:', error);
+          return { success: false, error: `Failed to capture screenshot: ${error.message || 'Unknown error'}` };
         }
       }
       
       case 'capture_full_page': {
-        // Try debugger API for full page capture
+        // Capture full page using debugger API
         try {
+          // Detach any existing debugger first
+          try {
+            await chrome.debugger.detach({ tabId: targetTab.id });
+          } catch (e) {
+            // Ignore if not attached
+          }
+          
           await chrome.debugger.attach({ tabId: targetTab.id }, '1.3');
           
           // Get page metrics for full page capture
@@ -512,12 +376,13 @@ async function handleScreenshotRequest(request: ScreenshotRequest): Promise<Scre
             {}
           );
           
-          // Capture full page
+          // Capture full page - use WebP for efficiency
           const result = await chrome.debugger.sendCommand(
             { tabId: targetTab.id },
             'Page.captureScreenshot',
             { 
-              format: request.format || 'png',
+              format: 'webp',
+              quality: 75,
               captureBeyondViewport: true,
               clip: {
                 x: 0,
@@ -533,17 +398,8 @@ async function handleScreenshotRequest(request: ScreenshotRequest): Promise<Scre
           
           return { success: true, data: { screenshot: (result as any).data } };
         } catch (error) {
-          // Fallback to viewport capture
-          try {
-            const screenshot = await chrome.tabs.captureVisibleTab(
-              targetTab.windowId,
-              { format: request.format || 'png' }
-            );
-            const base64Data = screenshot.replace(/^data:image\/[a-z]+;base64,/, '');
-            return { success: true, data: { screenshot: base64Data } };
-          } catch (fallbackError) {
-            return { success: false, error: 'Failed to capture full page' };
-          }
+          console.error('Full page capture failed:', error);
+          return { success: false, error: `Failed to capture full page: ${error.message || 'Unknown error'}` };
         }
       }
       
