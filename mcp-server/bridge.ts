@@ -5,6 +5,11 @@ class ExtensionBridge {
   private wss: WebSocketServer | null = null;
   private activeConnection: WebSocket | null = null;
   private messageQueue: Map<string, (response: ScreenshotResponse) => void> = new Map();
+  private chunkBuffers: Map<string, { 
+    chunks: (string | undefined)[], 
+    totalChunks: number, 
+    receivedChunks: number 
+  }> = new Map();
   private messageId = 0;
   private connectionResolve: (() => void) | null = null;
   private pingInterval: NodeJS.Timeout | null = null;
@@ -49,6 +54,16 @@ class ExtensionBridge {
           try {
             const message = JSON.parse(data.toString());
             
+            // Debug all incoming messages
+            if (message.id) {
+              console.log('Bridge received:', { 
+                id: message.id, 
+                type: message.type,
+                hasData: !!message.data,
+                chunkIndex: message.chunkIndex 
+              });
+            }
+            
             // Handle special ping message (backup for native ping/pong)
             if (message.type === 'ping') {
               ws.send(JSON.stringify({ type: 'pong' }));
@@ -56,6 +71,56 @@ class ExtensionBridge {
               return;
             }
             
+            // Handle chunked message types
+            if (message.type === 'chunk_header' && message.id) {
+              // Initialize chunk buffer
+              console.log(`Starting chunked transfer for ${message.id}: ${message.totalChunks} chunks, ${message.totalSize} bytes`);
+              this.chunkBuffers.set(message.id, {
+                chunks: new Array(message.totalChunks),
+                totalChunks: message.totalChunks,
+                receivedChunks: 0
+              });
+              return;
+            }
+            
+            if (message.type === 'chunk_data' && message.id) {
+              // Store chunk
+              const buffer = this.chunkBuffers.get(message.id);
+              if (buffer) {
+                buffer.chunks[message.chunkIndex] = message.data;
+                buffer.receivedChunks++;
+                
+                if (buffer.receivedChunks % 10 === 0) {
+                  console.log(`Received ${buffer.receivedChunks}/${buffer.totalChunks} chunks for ${message.id}`);
+                }
+              }
+              return;
+            }
+            
+            if (message.type === 'chunk_complete' && message.id) {
+              // Reassemble chunks
+              const buffer = this.chunkBuffers.get(message.id);
+              if (buffer) {
+                console.log(`Reassembling ${buffer.totalChunks} chunks for ${message.id}`);
+                const fullData = buffer.chunks.join('');
+                this.chunkBuffers.delete(message.id);
+                
+                // Call the original callback with reassembled data
+                const callback = this.messageQueue.get(message.id);
+                if (callback) {
+                  console.log(`Calling callback for ${message.id} with reassembled screenshot (${fullData.length} bytes)`);
+                  callback({
+                    success: true,
+                    data: { screenshot: fullData }
+                  });
+                } else {
+                  console.error(`No callback found for ${message.id}!`);
+                }
+              }
+              return;
+            }
+            
+            // Handle regular (non-chunked) responses
             if (message.id && this.messageQueue.has(message.id)) {
               const callback = this.messageQueue.get(message.id);
               if (callback) {
@@ -95,16 +160,18 @@ class ExtensionBridge {
     const id = String(++this.messageId);
     
     return new Promise((resolve, reject) => {
-      // Set timeout for response
+      // Set timeout for response (longer for potential chunked transfers)
       const timeout = setTimeout(() => {
         this.messageQueue.delete(id);
+        this.chunkBuffers.delete(id); // Clean up any incomplete chunks
         reject(new Error('Request timeout'));
-      }, 30000);
+      }, 60000); // 60 seconds for large screenshots
 
-      // Store callback
+      // Store callback with timeout reference
       this.messageQueue.set(id, (response) => {
         clearTimeout(timeout);
         this.messageQueue.delete(id);
+        this.chunkBuffers.delete(id); // Clean up any chunk buffers
         resolve(response);
       });
 

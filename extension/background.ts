@@ -121,20 +121,96 @@ function connectToMCPServer() {
         
         // Handle screenshot request from MCP server
         if (request.id && request.type) {
-          const response = await handleScreenshotRequest(request);
-          console.log('Extension sending response:', {
-            id: request.id,
-            success: response.success,
-            hasData: !!response.data,
-            hasScreenshot: !!response.data?.screenshot,
-            screenshotSize: response.data?.screenshot?.length,
-            error: response.error
-          });
-          // Send response back with the same ID
-          if (ws && ws.readyState === WebSocket.OPEN) {
-            ws.send(JSON.stringify({ id: request.id, ...response }));
+          // Special handling for large screenshots to avoid stack overflow
+          if (request.type === 'capture_viewport' || request.type === 'capture_full_page') {
+            try {
+              const response = await handleScreenshotRequest(request);
+              
+              // Don't log huge screenshots
+              if (response.data?.screenshot?.length > 1000000) {
+                console.log('Extension sending response: Large screenshot', {
+                  id: request.id,
+                  success: response.success,
+                  screenshotSizeMB: Math.round(response.data.screenshot.length / 1024 / 1024)
+                });
+              } else {
+                console.log('Extension sending response:', {
+                  id: request.id,
+                  success: response.success,
+                  hasData: !!response.data,
+                  hasScreenshot: !!response.data?.screenshot,
+                  screenshotSize: response.data?.screenshot?.length,
+                  error: response.error
+                });
+              }
+              
+              // Send response back with the same ID
+              if (ws && ws.readyState === WebSocket.OPEN) {
+                // Check if we have a screenshot that might be large
+                if (response.success && response.data?.screenshot) {
+                  const screenshot = response.data.screenshot;
+                  const CHUNK_SIZE = 256 * 1024; // 256KB chunks - small enough to stringify safely
+                  
+                  // If screenshot is large, chunk it
+                  if (screenshot.length > CHUNK_SIZE) {
+                    const totalChunks = Math.ceil(screenshot.length / CHUNK_SIZE);
+                    console.log(`Chunking large screenshot: ${screenshot.length} bytes into ${totalChunks} chunks`);
+                    
+                    // Send header first
+                    ws.send(JSON.stringify({
+                      id: request.id,
+                      type: 'chunk_header',
+                      totalChunks: totalChunks,
+                      totalSize: screenshot.length
+                    }));
+                    
+                    // Send each chunk
+                    for (let i = 0; i < totalChunks; i++) {
+                      const start = i * CHUNK_SIZE;
+                      const end = Math.min(start + CHUNK_SIZE, screenshot.length);
+                      const chunk = screenshot.slice(start, end);
+                      
+                      // Send this chunk
+                      ws.send(JSON.stringify({
+                        id: request.id,
+                        type: 'chunk_data',
+                        chunkIndex: i,
+                        data: chunk
+                      }));
+                    }
+                    
+                    // Send completion marker
+                    ws.send(JSON.stringify({
+                      id: request.id,
+                      type: 'chunk_complete'
+                    }));
+                  } else {
+                    // Small screenshot, send normally
+                    ws.send(JSON.stringify({ id: request.id, ...response }));
+                  }
+                } else {
+                  // Not a screenshot or error response
+                  ws.send(JSON.stringify({ id: request.id, ...response }));
+                }
+              }
+            } catch (error) {
+              console.error('Screenshot handling error:', error);
+              if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ 
+                  id: request.id, 
+                  success: false, 
+                  error: error instanceof Error ? error.message : 'Unknown error' 
+                }));
+              }
+            }
           } else {
-            console.error('WebSocket not open, cannot send response');
+            // Non-screenshot requests
+            const response = await handleScreenshotRequest(request);
+            if (ws && ws.readyState === WebSocket.OPEN) {
+              ws.send(JSON.stringify({ id: request.id, ...response }));
+            } else {
+              console.error('WebSocket not open, cannot send response');
+            }
           }
         }
       } catch (error) {
@@ -316,6 +392,8 @@ chrome.runtime.onMessage.addListener((request: ScreenshotRequest | { type: 'chec
 });
 
 async function handleScreenshotRequest(request: ScreenshotRequest): Promise<ScreenshotResponse> {
+  console.log('handleScreenshotRequest called with:', request);
+  
   try {
     let targetTab;
     
@@ -326,21 +404,17 @@ async function handleScreenshotRequest(request: ScreenshotRequest): Promise<Scre
       const matchingTabs = allTabs.filter(tab => {
         if (!tab.url) return false;
         
-        // Exact match
-        if (tab.url === request.url) return true;
+        const matches = 
+          tab.url === request.url ||
+          tab.url.startsWith(request.url) ||
+          tab.url.startsWith(request.url.replace(/\/$/, '') + '/') ||
+          (request.url.includes('localhost') && tab.url.includes(request.url.split('?')[0]));
         
-        // Tab URL starts with requested URL
-        if (tab.url.startsWith(request.url)) return true;
+        if (matches) {
+          console.log(`Tab ${tab.id} matches: ${tab.url} matches ${request.url}`);
+        }
         
-        // Requested URL is a base domain, match any path on that domain
-        // e.g., "https://github.com" matches "https://github.com/user/repo"
-        const requestedBase = request.url.replace(/\/$/, ''); // Remove trailing slash
-        if (tab.url.startsWith(requestedBase + '/') || tab.url === requestedBase) return true;
-        
-        // Handle localhost with different ports
-        if (request.url.includes('localhost') && tab.url.includes(request.url.split('?')[0])) return true;
-        
-        return false;
+        return matches;
       });
       
       if (matchingTabs.length > 0) {
@@ -387,14 +461,17 @@ async function handleScreenshotRequest(request: ScreenshotRequest): Promise<Scre
           // Attach debugger to the tab
           await chrome.debugger.attach({ tabId: targetTab.id }, '1.3');
           
-          // Capture screenshot using debugger protocol
+          // Capture screenshot using debugger protocol - use WebP for efficiency
           const result = await chrome.debugger.sendCommand(
             { tabId: targetTab.id },
             'Page.captureScreenshot',
-            { format: request.format || 'png' }
+            { 
+              format: 'webp',
+              quality: 75 
+            }
           );
           
-          // Detach debugger
+          // Detach debugger immediately
           await chrome.debugger.detach({ tabId: targetTab.id });
           
           // Extract only the screenshot data, nothing else that could have circular refs
@@ -403,9 +480,7 @@ async function handleScreenshotRequest(request: ScreenshotRequest): Promise<Scre
             throw new Error('Invalid screenshot data received');
           }
           
-          // Check size and log it
-          console.log(`Screenshot size: ${screenshotData.length} chars (${Math.round(screenshotData.length / 1024)}KB)`);
-          
+          // Always return the same structure - chunking happens at the WebSocket layer
           return { success: true, data: { screenshot: screenshotData } };
         } catch (debuggerError) {
           console.error('Debugger capture failed:', debuggerError);

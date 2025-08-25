@@ -121,12 +121,6 @@ const tools: Tool[] = [
         url: {
           type: 'string',
           description: 'URL of the tab to capture (will switch to this tab automatically)'
-        },
-        format: {
-          type: 'string',
-          enum: ['png', 'jpeg', 'webp'],
-          description: 'Image format (default: png)',
-          default: 'png'
         }
       }
     }
@@ -140,12 +134,6 @@ const tools: Tool[] = [
         url: {
           type: 'string',
           description: 'URL of the tab to capture (will switch to this tab automatically)'
-        },
-        format: {
-          type: 'string',
-          enum: ['png', 'jpeg', 'webp'],
-          description: 'Image format (default: png)',
-          default: 'png'
         }
       }
     }
@@ -173,12 +161,6 @@ const tools: Tool[] = [
           type: 'number',
           description: 'Pixels of padding around the element (default: 0)',
           default: 0
-        },
-        format: {
-          type: 'string',
-          enum: ['png', 'jpeg', 'webp'],
-          description: 'Image format (default: png)',
-          default: 'png'
         }
       },
       required: ['selector']
@@ -301,7 +283,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const response = await sendScreenshotRequest({
           type: 'capture_viewport',
           url: targetUrl,
-          format: args?.format || 'png'
+          format: 'webp'
         });
         
         if (response.success && response.data?.screenshot) {
@@ -314,12 +296,20 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
               {
                 type: 'image',
                 data: response.data.screenshot,
-                mimeType: `image/${args?.format || 'png'}`
+                mimeType: 'image/webp' // Always WebP now
               }
             ]
           };
         } else {
-          throw new Error(response.error || 'Failed to capture viewport');
+          const errorDetails = [
+            `Failed to capture viewport`,
+            response.error ? `Extension error: ${response.error}` : '',
+            !response.success ? `Success: false` : '',
+            !response.data ? `No data returned` : '',
+            response.data && !response.data.screenshot ? `Data exists but no screenshot` : ''
+          ].filter(Boolean).join(' | ');
+          
+          throw new Error(errorDetails);
         }
       }
       
@@ -327,7 +317,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const response = await sendScreenshotRequest({
           type: 'capture_full_page',
           url: args?.url || defaultTargetUrl,  // Use provided URL or default
-          format: args?.format || 'png'
+          format: 'webp'
         });
         
         if (response.success && response.data?.screenshot) {
@@ -336,7 +326,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
               {
                 type: 'image',
                 data: response.data.screenshot,
-                mimeType: `image/${args?.format || 'png'}`
+                mimeType: 'image/webp' // Always WebP now
               }
             ]
           };
@@ -352,7 +342,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           url: args?.url || defaultTargetUrl,  // Use provided URL or default
           index: args?.index || 0,
           padding: args?.padding || 0,
-          format: args?.format || 'png'
+          format: 'webp'
         });
         
         if (response.success && response.data?.screenshot) {
@@ -361,7 +351,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
               {
                 type: 'image',
                 data: response.data.screenshot,
-                mimeType: `image/${args?.format || 'png'}`
+                mimeType: 'image/webp' // Always WebP now
               }
             ]
           };
