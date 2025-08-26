@@ -4,7 +4,7 @@
   # MagicEyes
   
   
-  **Give your code assistant eyes. One command to see everything.**
+  **Give your code assistant eyes by letting it see your browser.**
   
   ---
 </div>
@@ -12,6 +12,16 @@
 ```bash
 npx magiceyes
 ```
+
+
+> [!IMPORTANT] 
+> MagicEyes is in **alpha.**
+> This means the Chrome extension isn't released just yet, but it's
+> incredibly easy to link yourself in one command / a couple of clicks.
+
+> [!NOTE]
+> MagicEyes currently only works with Claude Code and Google Chrome.
+> Support for more code assistants and browsers is on the roadmap!
 
 ## What It Does
 
