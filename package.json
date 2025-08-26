@@ -24,8 +24,7 @@
     "package:extension": "cd dist/extension && zip -r ../../magiceyes-extension.zip .",
     "test:server": "node index.js --server",
     "test:setup": "node index.js",
-    "sync:version": "node scripts/sync-version.js",
-    "prepublishOnly": "node scripts/sync-version.js && pnpm run build",
+    "prepublishOnly": "pnpm run build",
     "version:bump": "npm version patch && pnpm sync:version",
     "version:minor": "npm version minor && pnpm sync:version",
     "version:major": "npm version major && pnpm sync:version"

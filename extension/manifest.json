@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "MagicEyes",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Give your code assistant eyes - visual context for AI coding assistants",
   "permissions": [
     "activeTab",
@@ -11,15 +11,21 @@
     "storage",
     "debugger"
   ],
-  "host_permissions": ["<all_urls>"],
+  "host_permissions": [
+    "<all_urls>"
+  ],
   "background": {
     "service_worker": "background.js",
     "type": "module"
   },
   "content_scripts": [
     {
-      "matches": ["<all_urls>"],
-      "js": ["content.js"],
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "content.js"
+      ],
       "run_at": "document_start"
     }
   ],
