@@ -6,9 +6,7 @@ dist/
 
 # TypeScript build artifacts
 *.tsbuildinfo
-*.d.ts
-*.js
-*.js.map
+
 # Keep the necessary JS files
 !scripts/postinstall.js
 !scripts/dev.sh

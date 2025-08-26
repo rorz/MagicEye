@@ -1,5 +1,4 @@
 # Source files (we ship built versions)
-extension/
 mcp-server/
 scripts/
 shared/
@@ -12,11 +11,6 @@ ADOPTION_STRATEGY.md
 CLAUDE.md
 pnpm-lock.yaml
 *.sh
-
-# Build artifacts we don't need
-dist/extension/
-*.zip
-main-icon.png
 
 # Git
 .git/
