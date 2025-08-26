@@ -24,6 +24,7 @@ Getting started with the MagicEyes alpha is insanely easy, and requires only one
 ```bash
 npx magiceyes
 ```
+
 Right now, you'll have to follow the instructions to load an upacked version of the extension in Chrome, but that's about it!
 
 ### (Optional) Building yourself
