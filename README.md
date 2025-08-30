@@ -11,7 +11,7 @@
 > [!IMPORTANT]
 > MagicEyes is in **alpha.**
 > This means the Chrome extension isn't released just yet, but it's
-> incredibly easy to link yourself with a couple of clicks.
+> incredibly easy to link yourself with a couple of commands.
 
 > [!NOTE]
 > MagicEyes currently only works with Claude Code and Google Chrome.
